@@ -11,8 +11,8 @@
 #' 
 #' @return matrix P of the FJLT transform
 #' 
-constructP <- function(p, k, d, n) {
-    .Call('FastSC3_constructP', PACKAGE = 'FastSC3', p, k, d, n)
+constr_P <- function(p, k, d, n) {
+    .Call('FastSC3_constr_P', PACKAGE = 'FastSC3', p, k, d, n)
 }
 
 #' Construct the H (Hadamard) matrix for the FJLT transform
@@ -21,8 +21,8 @@ constructP <- function(p, k, d, n) {
 #' 
 #' @return matrix H of the FJLT transform
 #' 
-constructH <- function(d) {
-    .Call('FastSC3_constructH', PACKAGE = 'FastSC3', d)
+constr_H <- function(d) {
+    .Call('FastSC3_constr_H', PACKAGE = 'FastSC3', d)
 }
 
 #' Construct the D matrix for the FJLT transform
@@ -31,8 +31,8 @@ constructH <- function(d) {
 #' 
 #' @return matrix D of the FJLT transform
 #' 
-constructD <- function(d) {
-    .Call('FastSC3_constructD', PACKAGE = 'FastSC3', d)
+constr_D <- function(d) {
+    .Call('FastSC3_constr_D', PACKAGE = 'FastSC3', d)
 }
 
 #' Calculate the FJLT transform
@@ -47,7 +47,7 @@ constructD <- function(d) {
 #' 
 #' @return FJLT transform
 #' 
-calculateFJLT <- function(x, p, k, d, n) {
-    .Call('FastSC3_calculateFJLT', PACKAGE = 'FastSC3', x, p, k, d, n)
+calc_fjlt <- function(x, p, k, d, n) {
+    .Call('FastSC3_calc_fjlt', PACKAGE = 'FastSC3', x, p, k, d, n)
 }
 

@@ -6,9 +6,9 @@
 
 using namespace Rcpp;
 
-// constructP
-arma::mat constructP(int p, int k, int d, int n);
-RcppExport SEXP FastSC3_constructP(SEXP pSEXP, SEXP kSEXP, SEXP dSEXP, SEXP nSEXP) {
+// constr_P
+arma::mat constr_P(int p, int k, int d, int n);
+RcppExport SEXP FastSC3_constr_P(SEXP pSEXP, SEXP kSEXP, SEXP dSEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -16,35 +16,35 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type k(kSEXP);
     Rcpp::traits::input_parameter< int >::type d(dSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    __result = Rcpp::wrap(constructP(p, k, d, n));
+    __result = Rcpp::wrap(constr_P(p, k, d, n));
     return __result;
 END_RCPP
 }
-// constructH
-arma::mat constructH(int d);
-RcppExport SEXP FastSC3_constructH(SEXP dSEXP) {
+// constr_H
+arma::mat constr_H(int d);
+RcppExport SEXP FastSC3_constr_H(SEXP dSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< int >::type d(dSEXP);
-    __result = Rcpp::wrap(constructH(d));
+    __result = Rcpp::wrap(constr_H(d));
     return __result;
 END_RCPP
 }
-// constructD
-arma::rowvec constructD(int d);
-RcppExport SEXP FastSC3_constructD(SEXP dSEXP) {
+// constr_D
+arma::rowvec constr_D(int d);
+RcppExport SEXP FastSC3_constr_D(SEXP dSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< int >::type d(dSEXP);
-    __result = Rcpp::wrap(constructD(d));
+    __result = Rcpp::wrap(constr_D(d));
     return __result;
 END_RCPP
 }
-// calculateFJLT
-arma::mat calculateFJLT(arma::mat x, int p, int k, int d, int n);
-RcppExport SEXP FastSC3_calculateFJLT(SEXP xSEXP, SEXP pSEXP, SEXP kSEXP, SEXP dSEXP, SEXP nSEXP) {
+// calc_fjlt
+arma::mat calc_fjlt(arma::mat x, int p, int k, int d, int n);
+RcppExport SEXP FastSC3_calc_fjlt(SEXP xSEXP, SEXP pSEXP, SEXP kSEXP, SEXP dSEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -53,7 +53,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type k(kSEXP);
     Rcpp::traits::input_parameter< int >::type d(dSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    __result = Rcpp::wrap(calculateFJLT(x, p, k, d, n));
+    __result = Rcpp::wrap(calc_fjlt(x, p, k, d, n));
     return __result;
 END_RCPP
 }

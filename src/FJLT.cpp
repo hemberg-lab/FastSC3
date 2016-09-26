@@ -17,7 +17,7 @@ using namespace arma;
 //' @return matrix P of the FJLT transform
 //' 
 // [[Rcpp::export]]
-arma::mat constructP(int p, int k, int d, int n) {
+arma::mat constr_P(int p, int k, int d, int n) {
     unsigned int i, j;
     
     // define q
@@ -47,7 +47,7 @@ arma::mat constructP(int p, int k, int d, int n) {
 //' @return matrix H of the FJLT transform
 //' 
 // [[Rcpp::export]]
-arma::mat constructH(int d) {
+arma::mat constr_H(int d) {
     // initialize H
     mat H = ones<mat>(1, 1);
     while(d > 0) {
@@ -64,7 +64,7 @@ arma::mat constructH(int d) {
 //' @return matrix D of the FJLT transform
 //' 
 // [[Rcpp::export]]
-arma::rowvec constructD(int d) {
+arma::rowvec constr_D(int d) {
     int i;
     rowvec D = zeros<rowvec>(d);
     for (i = 0; i < d; i++) {
@@ -90,11 +90,11 @@ arma::rowvec constructD(int d) {
 //' @return FJLT transform
 //' 
 // [[Rcpp::export]]
-arma::mat calculateFJLT(arma::mat x, int p, int k, int d, int n) {
+arma::mat calc_fjlt(arma::mat x, int p, int k, int d, int n) {
 
-    mat P = constructP(p, k, d, n);
-    mat H = constructH(log2(d))/sqrt(d);
-    rowvec D = constructD(d);
+    mat P = constr_P(p, k, d, n);
+    mat H = constr_H(log2(d))/sqrt(d);
+    rowvec D = constr_D(d);
     
     // D is a vector of diagonal elements therefore we can just
     // multiply each column of H by the elements of D

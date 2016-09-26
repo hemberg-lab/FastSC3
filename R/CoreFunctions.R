@@ -18,21 +18,22 @@
 #' 
 #' @return transformed reduced expression matrix
 #' @export
-FJLT <- function(x, k = 100) {
+fjlt <- function(x, k = 100) {
     # p - the norm we are using (Euclidean, p = 2)
     p <- 2
     n <- ncol(x)
     # pad data to a power of 2
     d_orig <- nrow(x)
-    d <- findClosestPowerOf2(d_orig)
+    d <- closest_pow_of_two(d_orig)
     # pad matrix with 0 if d > d_orig
+    x <- pad_matrix_with_zeros(x, d, d_orig, n)
     x <- rbind(x, matrix(0, nrow = d - d_orig, ncol = n))
     # compute FJLT
-    res <- calculateFJLT(x, p, k, d, n)
+    res <- calc_fjlt(x, p, k, d, n)
     return(res)
 }
 
-findClosestPowerOf2 <- function(d) {
+closest_pow_of_two <- function(d) {
     i <- 1
     repeat{
         if(2^i >= d){
