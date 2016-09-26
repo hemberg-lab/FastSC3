@@ -31,7 +31,6 @@ The input for FastSC3 is an object of class scater. Here we will create it from 
 
 ```{r, message=FALSE, warning=FALSE}
 library(scater)
-library(SC3)
 library(FastSC3)
 library(pheatmap)
 

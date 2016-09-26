@@ -1,6 +1,5 @@
 #include <armadillo>
 #include <RcppArmadillo.h>
-#include <random>
 
 using namespace std;
 using namespace Rcpp;
