@@ -1,0 +1,87 @@
+---
+title: "FastSC3 package manual"
+author: "Vladimir Kiselev"
+date: "`r Sys.Date()`"
+output:
+    BiocStyle::html_document:
+        toc: true
+vignette: >
+  %\VignetteIndexEntry{SC3 package manual}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+
+```{r knitr-options, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+opts_chunk$set(fig.align = 'center', fig.width = 6, fig.height = 5, dev = 'png')
+```
+
+# Introduction
+
+'FastSC3' is an extension of the 'SC3' package to very large datasets. While using some approximations, it allows a user to cluster the dataset without using the hybrid (SVM) strategy and to work on the total number of cells.
+
+'FastSC3' depends on 'SC3' so that all the 'SC3' methods are accessible from 'FastSC3'.
+
+# Quick Start
+
+## `FastSC3` Input
+
+The input for FastSC3 is an object of class scater. Here we will create it from the dataset ('treutlein') that comes with the package:
+
+```{r, message=FALSE, warning=FALSE}
+library(scater)
+library(SC3)
+library(FastSC3)
+library(pheatmap)
+
+treutlein_cell_info <- data.frame(author_clusters = colnames(treutlein))
+cell_inds <- paste("Cell", 1:ncol(treutlein), sep = "_")
+rownames(treutlein_cell_info) <- cell_inds
+treutlein_cell_exprs <- treutlein
+colnames(treutlein_cell_exprs) <- cell_inds
+pd <- new("AnnotatedDataFrame", data = treutlein_cell_info)
+treutlein_sceset <- newSCESet(countData = treutlein_cell_exprs, phenoData = pd)
+```
+
+To be able to create plots using `scater` we will also calculate the QC metrics:
+```{r}
+treutlein_sceset <- calculateQCMetrics(treutlein_sceset)
+```
+
+## `sc3_prepare`
+
+```{r}
+# Note that n.cores = 1 is required for compilation of this vignette.
+# Please remove this parameter when running on your computer:
+# treutlein_sceset <- sc3_prepare(treutlein_sceset)
+treutlein_sceset <- sc3_prepare(treutlein_sceset, n.cores = 1)
+treutlein_sceset <- sc3_estimate_k(treutlein_sceset)
+treutlein_sceset <- sc3_set_ks(treutlein_sceset, ks = 5)
+```
+
+```{r}
+treutlein_sceset <- fsc3_fjlt(treutlein_sceset)
+pheatmap::pheatmap(treutlein_sceset@sc3$processed_dataset)
+```
+
+```{r}
+treutlein_sceset <- sc3_calc_dists(treutlein_sceset)
+```
+
+```{r}
+treutlein_sceset <- sc3_calc_transfs(treutlein_sceset)
+```
+
+```{r}
+treutlein_sceset <- sc3_kmeans(treutlein_sceset)
+```
+
+```{r}
+treutlein_sceset <- sc3_calc_consens(treutlein_sceset)
+```
+
+```{r}
+treutlein_sceset <- sc3_summarise_results(treutlein_sceset, k = 5)
+```
+

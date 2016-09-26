@@ -7,6 +7,8 @@
 calc_fjlt(x, p, k, d, n)
 }
 \arguments{
+\item{x}{matrix to be transformed}
+
 \item{p}{the norm}
 
 \item{k}{dimension we reduce to}
@@ -14,8 +16,6 @@ calc_fjlt(x, p, k, d, n)
 \item{d}{dimension of the input matrix}
 
 \item{n}{number of cells (columns) in the input matrix}
-
-\item{epsilon}{error tolerance parameter}
 }
 \value{
 FJLT transform

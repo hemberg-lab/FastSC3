@@ -9,7 +9,7 @@ fjlt(x, k = 100)
 \arguments{
 \item{x}{input expression matrix}
 
-\item{epsilon}{error tolerance parameter}
+\item{k}{number of dimension to reduce to}
 }
 \value{
 transformed reduced expression matrix

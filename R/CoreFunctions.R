@@ -12,33 +12,19 @@
 #' Functions adapted from: http://www.cs.ubc.ca/~jaquesn/MachineLearningTheory.pdf
 #'
 #' @param x input expression matrix
-#' @param epsilon error tolerance parameter
+#' @param k number of dimension to reduce to
 #' 
 #' @useDynLib FastSC3
 #' 
 #' @return transformed reduced expression matrix
 #' @export
 fjlt <- function(x, k = 100) {
-    # p - the norm we are using (Euclidean, p = 2)
-    p <- 2
-    n <- ncol(x)
     # pad data to a power of 2
-    d_orig <- nrow(x)
-    d <- closest_pow_of_two(d_orig)
-    # pad matrix with 0 if d > d_orig
-    x <- pad_matrix_with_zeros(x, d, d_orig, n)
-    x <- rbind(x, matrix(0, nrow = d - d_orig, ncol = n))
-    # compute FJLT
-    res <- calc_fjlt(x, p, k, d, n)
-    return(res)
-}
-
-closest_pow_of_two <- function(d) {
     i <- 1
-    repeat{
-        if(2^i >= d){
-            return(2^i)
-        }
+    while(2^i < nrow(x)){
         i <- i + 1
     }
+    # return FJLT of x
+    # p - the norm we are using (Euclidean, p = 2)
+    calc_fjlt(x = x, p = 2, k = k, d = 2^i, n = ncol(x))
 }

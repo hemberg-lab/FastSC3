@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// pad_matrix_with_zeros
+arma::mat pad_matrix_with_zeros(arma::mat x, int d);
+RcppExport SEXP FastSC3_pad_matrix_with_zeros(SEXP xSEXP, SEXP dSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type d(dSEXP);
+    __result = Rcpp::wrap(pad_matrix_with_zeros(x, d));
+    return __result;
+END_RCPP
+}
 // constr_P
 arma::mat constr_P(int p, int k, int d, int n);
 RcppExport SEXP FastSC3_constr_P(SEXP pSEXP, SEXP kSEXP, SEXP dSEXP, SEXP nSEXP) {

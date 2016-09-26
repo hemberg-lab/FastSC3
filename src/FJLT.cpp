@@ -6,6 +6,21 @@ using namespace std;
 using namespace Rcpp;
 using namespace arma;
 
+//' Calculate the FJLT transform
+//' 
+//' Fast-Johnson-Lindenstrauss-Transform
+//' 
+//' @param x input matrix
+//' @param d dimension to pad to
+//' 
+//' @return FJLT transform
+//' 
+// [[Rcpp::export]]
+arma::mat pad_matrix_with_zeros(arma::mat x, int d) {
+    x.insert_rows( x.n_rows, d - x.n_rows );
+    return(x);
+}
+
 //' Construct the P matrix for the FJLT transform
 //' 
 //' @param epsilon error tolerance parameter
@@ -33,6 +48,7 @@ arma::mat constr_P(int p, int k, int d, int n) {
     for (i = 0; i < k; i++) {
         for (j = 0; j < d; j++) {
             if(randu() <= q) {
+                // make the variance of the normal distribution 1/q
                 P(i, j) = randn() * sqrt(1/q);
             }
         }
@@ -81,7 +97,7 @@ arma::rowvec constr_D(int d) {
 //' 
 //' Fast-Johnson-Lindenstrauss-Transform
 //' 
-//' @param epsilon error tolerance parameter
+//' @param x matrix to be transformed
 //' @param p the norm
 //' @param k dimension we reduce to
 //' @param d dimension of the input matrix
@@ -99,9 +115,12 @@ arma::mat calc_fjlt(arma::mat x, int p, int k, int d, int n) {
     // D is a vector of diagonal elements therefore we can just
     // multiply each column of H by the elements of D
     H.each_row() %= D;
+    
+    // pad input matrix with 0 if d > d_orig
+    x = pad_matrix_with_zeros(x, d);
+    
+    x = P * H * x;
 
-    mat res = P * H * x;
-
-    return(res);
+    return(x);
 }
 
