@@ -69,3 +69,29 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// CalculateApproximateLaplacianEigenvectors
+arma::mat CalculateApproximateLaplacianEigenvectors(arma::mat L, double p, int d, double delta);
+RcppExport SEXP FastSC3_CalculateApproximateLaplacianEigenvectors(SEXP LSEXP, SEXP pSEXP, SEXP dSEXP, SEXP deltaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type L(LSEXP);
+    Rcpp::traits::input_parameter< double >::type p(pSEXP);
+    Rcpp::traits::input_parameter< int >::type d(dSEXP);
+    Rcpp::traits::input_parameter< double >::type delta(deltaSEXP);
+    __result = Rcpp::wrap(CalculateApproximateLaplacianEigenvectors(L, p, d, delta));
+    return __result;
+END_RCPP
+}
+// AdaptiveSampling
+arma::mat AdaptiveSampling(arma::mat x, int d);
+RcppExport SEXP FastSC3_AdaptiveSampling(SEXP xSEXP, SEXP dSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type d(dSEXP);
+    __result = Rcpp::wrap(AdaptiveSampling(x, d));
+    return __result;
+END_RCPP
+}
