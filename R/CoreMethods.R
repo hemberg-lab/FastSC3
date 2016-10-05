@@ -146,7 +146,7 @@ fsc3_calc_eigenv.SCESet <- function(object) {
     message("Calculating eigenvectors...")
     
     if (object@sc3$n_cores > length(transformations)) {
-        n.cores <- nrow(hash.table)
+        n.cores <- length(transformations)
     } else {
         n.cores <- object@sc3$n_cores
     }
