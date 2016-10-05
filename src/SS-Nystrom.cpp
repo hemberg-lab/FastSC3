@@ -5,68 +5,60 @@ using namespace std;
 using namespace Rcpp;
 using namespace arma;
 
-//' Calculate the FJLT transform
+//' Calculate approximate eigenvectors
 //' 
-//' Fast-Johnson-Lindenstrauss-Transform
+//' Nystrom spectral shifting method
 //' 
-//' @param x input matrix
-//' @param d dimension to pad to
+//' @param K input SPSD matrix
+//' @param p number of selected columns as fraction of ncol(K)
 //' 
-//' @return FJLT transform
+//' @return approximate eigenvectors
 //' 
-
 // [[Rcpp::export]]
-arma::mat CalculateApproximateLaplacianEigenvectors(arma::mat L, double p, int d, double delta = 0.9985) {
-    int N = L.n_cols;
-    int r = round(N * p);
-    
+arma::mat ssNystrom(arma::mat K, int r) {
     // create a vector v = 1:N
     std::vector<int> v;
-    for(int i = 0; i < N; i++) {
+    for(int i = 0; i < K.n_cols; i++) {
         v.push_back(i);
     }
     
-    // permute v and write to sampleInds
+    // permute v and write to inds
     arma::vec N_vec = conv_to<vec>::from(v);
-    arma::vec sampleInds = shuffle( N_vec );
+    arma::vec inds = shuffle( N_vec );
     
-    // subset sampleInds
-    sampleInds = sampleInds.subvec(0, r - 1);
+    // subset inds
+    inds = inds.subvec(0, r - 1);
     
-    // subset L using sampleInds
-    NumericVector idx = NumericVector(sampleInds.begin(), sampleInds.end());
+    // subset K using inds
+    NumericVector idx = NumericVector(inds.begin(), inds.end());
     arma::uvec idx1 = as<uvec>(idx);
-    arma::mat C = L.cols(idx1);
+    arma::mat C = K.cols(idx1);
     
     // compute Moore–Penrose pseudoinverse
     arma::mat Ci = pinv( C );
     
-    // compute U
-    arma::mat U = Ci * L * Ci.t();
+    // compute U (rxr)
+    arma::mat U = Ci * K * Ci.t();
     
-    // compute modified SS-Nystrom
-    arma::mat K = C * U * C.t();
+    // SVD of C
+    mat Uc;
+    vec Ec;
+    mat Vc;
+    svd_econ(Uc,Ec,Vc,C, "both", "std");
     
-    return(K);
+    // Calculate S
+    mat S = diagmat(Ec) * Vc * U * Vc.t() * diagmat(Ec).t();
+
+    // Eigenvalue decomposition of S
+    cx_vec Ls;
+    cx_mat Us;
+
+    eig_gen(Ls, Us, S);
+
+    // compute approximate eigenvectors
+    mat Us_conv = conv_to<mat>::from(Us);
+    arma::mat apprEigen = Uc * Us_conv;
+    
+    return(apprEigen);
 }
 
-// // [[Rcpp::export]]
-// arma::vec test(int N) {
-//     
-//     return(sampleInds.subvec(0, 5));
-// }
-
-//' Calculate the FJLT transform
-//' 
-//' Fast-Johnson-Lindenstrauss-Transform
-//' 
-//' @param x input matrix
-//' @param d dimension to pad to
-//' 
-//' @return FJLT transform
-//' 
-// [[Rcpp::export]]
-arma::mat AdaptiveSampling(arma::mat x, int d) {
-    x.insert_rows( x.n_rows, d - x.n_rows );
-    return(x);
-}

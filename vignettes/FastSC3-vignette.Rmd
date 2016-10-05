@@ -69,7 +69,11 @@ treutlein_sceset <- sc3_calc_dists(treutlein_sceset)
 ```
 
 ```{r}
-treutlein_sceset <- sc3_calc_transfs(treutlein_sceset)
+treutlein_sceset <- fsc3_calc_transfs(treutlein_sceset)
+```
+
+```{r}
+treutlein_sceset <- fsc3_calc_eigenv(treutlein_sceset)
 ```
 
 ```{r}

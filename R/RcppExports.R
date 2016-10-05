@@ -64,31 +64,16 @@ calc_fjlt <- function(x, p, k, d, n) {
     .Call('FastSC3_calc_fjlt', PACKAGE = 'FastSC3', x, p, k, d, n)
 }
 
-#' Calculate the FJLT transform
+#' Calculate approximate eigenvectors
 #' 
-#' Fast-Johnson-Lindenstrauss-Transform
+#' Nystrom spectral shifting method
 #' 
-#' @param x input matrix
-#' @param d dimension to pad to
+#' @param K input SPSD matrix
+#' @param p number of selected columns as fraction of ncol(K)
 #' 
-#' @return FJLT transform
+#' @return approximate eigenvectors
 #' 
-NULL
-
-CalculateApproximateLaplacianEigenvectors <- function(L, p, d, delta = 0.9985) {
-    .Call('FastSC3_CalculateApproximateLaplacianEigenvectors', PACKAGE = 'FastSC3', L, p, d, delta)
-}
-
-#' Calculate the FJLT transform
-#' 
-#' Fast-Johnson-Lindenstrauss-Transform
-#' 
-#' @param x input matrix
-#' @param d dimension to pad to
-#' 
-#' @return FJLT transform
-#' 
-AdaptiveSampling <- function(x, d) {
-    .Call('FastSC3_AdaptiveSampling', PACKAGE = 'FastSC3', x, d)
+ssNystrom <- function(K, r) {
+    .Call('FastSC3_ssNystrom', PACKAGE = 'FastSC3', K, r)
 }
 

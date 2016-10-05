@@ -28,3 +28,24 @@ fjlt <- function(x, k = 100) {
     # p - the norm we are using (Euclidean, p = 2)
     calc_fjlt(x = x, p = 2, k = k, d = 2^i, n = ncol(x))
 }
+
+
+#' Distance matrix transformation
+#'
+#' All distance matrices are transformed to either covariance matrix 
+#' (in case of PCA) or to graph Laplacian (in case of Laplacian).
+#'
+#' @param dists distance matrix
+#' @param method transformation method: either 'pca' or
+#' 'laplacian'
+#' @return transformed distance matrix
+#' 
+#' @importFrom SC3 norm_laplacian
+ftransformation <- function(dists, method) {
+    if (method == "pca") {
+        covar <- cov(scale(dists, center = TRUE, scale = TRUE))
+        return(covar)
+    } else if (method == "laplacian") {
+        return(norm_laplacian(dists))
+    }
+}
