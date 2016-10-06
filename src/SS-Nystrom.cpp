@@ -33,12 +33,12 @@ arma::mat ssNystrom(arma::mat K, int c) {
     // calculate delta
     double delta = calc_delta(K, c);
     
-    // shift K
+    // spectral shifting of K
     arma::mat K_shift = K - delta * eye(size(K));
     
     // create a vector v = 1:N
     std::vector<int> v;
-    for(int i = 0; i < K.n_cols; i++) {
+    for(int i = 0; i < K_shift.n_cols; i++) {
         v.push_back(i);
     }
     
@@ -49,16 +49,16 @@ arma::mat ssNystrom(arma::mat K, int c) {
     // subset inds
     inds = inds.subvec(0, c - 1);
     
-    // subset K using inds
+    // subset K_shift using inds
     NumericVector idx = NumericVector(inds.begin(), inds.end());
     arma::uvec idx1 = as<uvec>(idx);
-    arma::mat C = K.cols(idx1);
+    arma::mat C = K_shift.cols(idx1);
     
     // compute Moore–Penrose pseudoinverse
     arma::mat Ci = pinv( C );
     
     // compute U (rxr)
-    arma::mat U = Ci * K * Ci.t();
+    arma::mat U = Ci * K_shift * Ci.t();
     
     // SVD of C
     mat Uc;
