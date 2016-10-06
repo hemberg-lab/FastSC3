@@ -69,15 +69,27 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
-// ssNystrom
-arma::mat ssNystrom(arma::mat K, int r);
-RcppExport SEXP FastSC3_ssNystrom(SEXP KSEXP, SEXP rSEXP) {
+// calc_delta
+double calc_delta(arma::mat K, int k);
+RcppExport SEXP FastSC3_calc_delta(SEXP KSEXP, SEXP kSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< arma::mat >::type K(KSEXP);
-    Rcpp::traits::input_parameter< int >::type r(rSEXP);
-    __result = Rcpp::wrap(ssNystrom(K, r));
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    __result = Rcpp::wrap(calc_delta(K, k));
+    return __result;
+END_RCPP
+}
+// ssNystrom
+arma::mat ssNystrom(arma::mat K, int c);
+RcppExport SEXP FastSC3_ssNystrom(SEXP KSEXP, SEXP cSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type K(KSEXP);
+    Rcpp::traits::input_parameter< int >::type c(cSEXP);
+    __result = Rcpp::wrap(ssNystrom(K, c));
     return __result;
 END_RCPP
 }

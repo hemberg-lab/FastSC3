@@ -64,16 +64,20 @@ calc_fjlt <- function(x, p, k, d, n) {
     .Call('FastSC3_calc_fjlt', PACKAGE = 'FastSC3', x, p, k, d, n)
 }
 
+calc_delta <- function(K, k) {
+    .Call('FastSC3_calc_delta', PACKAGE = 'FastSC3', K, k)
+}
+
 #' Calculate approximate eigenvectors
 #' 
 #' Nystrom spectral shifting method
 #' 
 #' @param K input SPSD matrix
-#' @param p number of selected columns as fraction of ncol(K)
+#' @param c number of selected columns as fraction of ncol(K)
 #' 
 #' @return approximate eigenvectors
 #' 
-ssNystrom <- function(K, r) {
-    .Call('FastSC3_ssNystrom', PACKAGE = 'FastSC3', K, r)
+ssNystrom <- function(K, c) {
+    .Call('FastSC3_ssNystrom', PACKAGE = 'FastSC3', K, c)
 }
 

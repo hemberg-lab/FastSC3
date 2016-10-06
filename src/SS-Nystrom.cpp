@@ -5,17 +5,37 @@ using namespace std;
 using namespace Rcpp;
 using namespace arma;
 
+// [[Rcpp::export]]
+double calc_delta(arma::mat K, int k) {
+    int m = K.n_rows;
+    int l = 4*k;
+    mat sigma(m, l, fill::randn);
+    mat Q = orth(K * sigma);
+    mat A = Q.t() * K;
+    vec Asvd = svd(A);
+    double s = sum(Asvd.head(k));
+    double delta = 1.0 / (m - k) * (trace(K) - s);
+    return(delta);
+}
+
 //' Calculate approximate eigenvectors
 //' 
 //' Nystrom spectral shifting method
 //' 
 //' @param K input SPSD matrix
-//' @param p number of selected columns as fraction of ncol(K)
+//' @param c number of selected columns as fraction of ncol(K)
 //' 
 //' @return approximate eigenvectors
 //' 
 // [[Rcpp::export]]
-arma::mat ssNystrom(arma::mat K, int r) {
+arma::mat ssNystrom(arma::mat K, int c) {
+    
+    // calculate delta
+    double delta = calc_delta(K, c);
+    
+    // shift K
+    arma::mat K_shift = K - delta * eye(size(K));
+    
     // create a vector v = 1:N
     std::vector<int> v;
     for(int i = 0; i < K.n_cols; i++) {
@@ -27,7 +47,7 @@ arma::mat ssNystrom(arma::mat K, int r) {
     arma::vec inds = shuffle( N_vec );
     
     // subset inds
-    inds = inds.subvec(0, r - 1);
+    inds = inds.subvec(0, c - 1);
     
     // subset K using inds
     NumericVector idx = NumericVector(inds.begin(), inds.end());
@@ -44,7 +64,7 @@ arma::mat ssNystrom(arma::mat K, int r) {
     mat Uc;
     vec Ec;
     mat Vc;
-    svd_econ(Uc,Ec,Vc,C, "both", "std");
+    svd_econ(Uc, Ec, Vc, C, "both", "std");
     
     // Calculate S
     mat S = diagmat(Ec) * Vc * U * Vc.t() * diagmat(Ec).t();
@@ -52,7 +72,6 @@ arma::mat ssNystrom(arma::mat K, int r) {
     // Eigenvalue decomposition of S
     cx_vec Ls;
     cx_mat Us;
-
     eig_gen(Ls, Us, S);
 
     // compute approximate eigenvectors

@@ -4,12 +4,12 @@
 \alias{ssNystrom}
 \title{Calculate approximate eigenvectors}
 \usage{
-ssNystrom(K, r)
+ssNystrom(K, c)
 }
 \arguments{
 \item{K}{input SPSD matrix}
 
-\item{p}{number of selected columns as fraction of ncol(K)}
+\item{c}{number of selected columns as fraction of ncol(K)}
 }
 \value{
 approximate eigenvectors
