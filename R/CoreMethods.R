@@ -157,7 +157,7 @@ fsc3_calc_eigenv.SCESet <- function(object) {
     # calculate the 6 distinct transformations in parallel
     eigenv <- foreach::foreach(i = 1:length(transformations)) %dopar% {
         try({
-            ssNystrom(transfs[[i]], r = n.dim)
+            ssNystrom(transfs[[i]], c = n.dim)
         })
     }
     
