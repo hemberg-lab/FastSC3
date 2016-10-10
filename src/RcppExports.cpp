@@ -69,6 +69,28 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// calculate_P1
+arma::mat calculate_P1(arma::mat X);
+RcppExport SEXP FastSC3_calculate_P1(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    __result = Rcpp::wrap(calculate_P1(X));
+    return __result;
+END_RCPP
+}
+// normalise_kernel
+arma::mat normalise_kernel(arma::mat K);
+RcppExport SEXP FastSC3_normalise_kernel(SEXP KSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type K(KSEXP);
+    __result = Rcpp::wrap(normalise_kernel(K));
+    return __result;
+END_RCPP
+}
 // calc_delta
 double calc_delta(arma::mat K, int k);
 RcppExport SEXP FastSC3_calc_delta(SEXP KSEXP, SEXP kSEXP) {

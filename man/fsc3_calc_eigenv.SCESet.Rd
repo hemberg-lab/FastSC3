@@ -5,7 +5,7 @@
 \alias{fsc3_calc_eigenv}
 \alias{fsc3_calc_eigenv,SCESet-method}
 \alias{fsc3_calc_eigenv.SCESet}
-\title{Calculate transformations of the distance matrices.}
+\title{Calculate eigenvectors of the transformed distance matrix.}
 \usage{
 fsc3_calc_eigenv.SCESet(object)
 
@@ -18,12 +18,15 @@ fsc3_calc_eigenv.SCESet(object)
 an object of 'SCESet' class
 }
 \description{
-This function calculates transforamtions of the distance matrices contained in 
-the sc3_distances item of the object@sc3 slot. It then
-creates and populates the following items of the object@sc3 slot:
-\itemize{
-  \item transformations - contains a list of transformations of the 
-  distance matrices corresponding to covariance and graph laplacian.
+This function calculates eigenvectors of the transformed distance matrices contained in 
+the transformation item of the object@sc3 slot. It then
+populates back the transformations item the calculated eigenvectors.
 }
+\details{
+Eigenvectors are calculated by using the SS-Nystrom approximation.
+Wang, S., Zhang, C., Qian, H. & Zhang, Z. Improving the Modified NyströM 
+Method Using Spectral Shifting. in Proceedings of the 20th ACM SIGKDD 
+International Conference on Knowledge Discovery and Data Mining 611–620 
+(ACM, 2014).
 }
 

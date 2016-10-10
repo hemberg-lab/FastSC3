@@ -64,6 +64,14 @@ calc_fjlt <- function(x, p, k, d, n) {
     .Call('FastSC3_calc_fjlt', PACKAGE = 'FastSC3', x, p, k, d, n)
 }
 
+calculate_P1 <- function(X) {
+    .Call('FastSC3_calculate_P1', PACKAGE = 'FastSC3', X)
+}
+
+normalise_kernel <- function(K) {
+    .Call('FastSC3_normalise_kernel', PACKAGE = 'FastSC3', K)
+}
+
 calc_delta <- function(K, k) {
     .Call('FastSC3_calc_delta', PACKAGE = 'FastSC3', K, k)
 }

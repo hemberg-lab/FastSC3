@@ -12,3 +12,8 @@ setGeneric("fsc3_calc_transfs", function(object, ...) {
 setGeneric("fsc3_calc_eigenv", function(object, ...) {
     standardGeneric("fsc3_calc_eigenv")
 })
+
+#' @export
+setGeneric("fsc3_norm_kernel", function(object, ...) {
+    standardGeneric("fsc3_norm_kernel")
+})

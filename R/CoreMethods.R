@@ -110,15 +110,17 @@ setMethod("fsc3_calc_transfs", signature(object = "SCESet"), function(object) {
     fsc3_calc_transfs.SCESet(object)
 })
 
-#' Calculate transformations of the distance matrices.
+#' Calculate eigenvectors of the transformed distance matrix.
 #' 
-#' This function calculates transforamtions of the distance matrices contained in 
-#' the sc3_distances item of the object@sc3 slot. It then
-#' creates and populates the following items of the object@sc3 slot:
-#' \itemize{
-#'   \item transformations - contains a list of transformations of the 
-#'   distance matrices corresponding to covariance and graph laplacian.
-#' }
+#' This function calculates eigenvectors of the transformed distance matrices contained in 
+#' the transformation item of the object@sc3 slot. It then
+#' populates back the transformations item the calculated eigenvectors.
+#' 
+#' Eigenvectors are calculated by using the SS-Nystrom approximation.
+#' Wang, S., Zhang, C., Qian, H. & Zhang, Z. Improving the Modified NyströM 
+#' Method Using Spectral Shifting. in Proceedings of the 20th ACM SIGKDD 
+#' International Conference on Knowledge Discovery and Data Mining 611–620 
+#' (ACM, 2014).
 #' 
 #' @param object an object of 'SCESet' class
 #' 
@@ -177,3 +179,68 @@ fsc3_calc_eigenv.SCESet <- function(object) {
 setMethod("fsc3_calc_eigenv", signature(object = "SCESet"), function(object) {
     fsc3_calc_eigenv.SCESet(object)
 })
+
+#' Calculate doubly-stochastic approximation of the PSD matrix
+#' 
+#' Zass, R. & Shashua, A. in Advances in Neural Information Processing 
+#' Systems 19 (eds. Schölkopf, B., Platt, J. C. & Hoffman, T.) 1569–1576 
+#' (MIT Press, 2007).
+#' 
+#' @param object an object of 'SCESet' class
+#' 
+#' @return an object of 'SCESet' class
+#' 
+#' @importFrom doRNG %dorng%
+#' @importFrom foreach foreach %dopar%
+#' @importFrom parallel makeCluster stopCluster
+#' @importFrom doParallel registerDoParallel
+#' 
+#' @export
+fsc3_norm_kernel.SCESet <- function(object) {
+    transfs <- object@sc3$transformations
+    if (is.null(transfs)) {
+        warning(paste0("Please run fsc3_calc_transfs() first!"))
+        return(object)
+    }
+    
+    # NULLing the variables to avoid notes in R CMD CHECK
+    i <- NULL
+    
+    transformations <- names(transfs)
+    n.dim <- max(object@sc3$n_dim)
+    
+    message("Calculating eigenvectors...")
+    
+    if (object@sc3$n_cores > length(transformations)) {
+        n.cores <- length(transformations)
+    } else {
+        n.cores <- object@sc3$n_cores
+    }
+    
+    cl <- parallel::makeCluster(n.cores, outfile = "")
+    doParallel::registerDoParallel(cl, cores = n.cores)
+    
+    # calculate the 6 distinct transformations in parallel
+    normals <- foreach::foreach(i = 1:length(transformations)) %dopar% {
+        try({
+            normalise_kernel(transfs[[i]])
+        })
+    }
+    
+    # stop local cluster
+    parallel::stopCluster(cl)
+    
+    names(normals) <- transformations
+    
+    object@sc3$transformations <- normals
+    return(object)
+}
+
+#' @rdname fsc3_norm_kernel.SCESet
+#' @aliases fsc3_norm_kernel
+#' @importClassesFrom scater SCESet
+#' @export
+setMethod("fsc3_norm_kernel", signature(object = "SCESet"), function(object) {
+    fsc3_norm_kernel.SCESet(object)
+})
+
