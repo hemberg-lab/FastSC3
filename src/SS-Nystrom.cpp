@@ -31,7 +31,9 @@ double calc_delta(arma::mat K, int k) {
 arma::mat ssNystrom(arma::mat K, int c) {
     
     // calculate delta
-    double delta = calc_delta(K, c);
+    // double delta = calc_delta(K, c);
+    
+    double delta = 0.999;
     
     // spectral shifting of K
     arma::mat K_shift = K - delta * eye(size(K));

@@ -15,5 +15,5 @@ License: GPL-3
 Depends: SC3
 Imports:
     Rcpp (>= 0.12.6)
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, BH
 RoxygenNote: 5.0.1

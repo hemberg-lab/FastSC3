@@ -91,6 +91,66 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// get_span
+arma::vec get_span(arma::mat X);
+RcppExport SEXP FastSC3_get_span(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    __result = Rcpp::wrap(get_span(X));
+    return __result;
+END_RCPP
+}
+// get_hyperplane
+arma::vec get_hyperplane(arma::vec span, int M);
+RcppExport SEXP FastSC3_get_hyperplane(SEXP spanSEXP, SEXP MSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::vec >::type span(spanSEXP);
+    Rcpp::traits::input_parameter< int >::type M(MSEXP);
+    __result = Rcpp::wrap(get_hyperplane(span, M));
+    return __result;
+END_RCPP
+}
+// get_thresholds
+arma::vec get_thresholds(arma::mat X, int bin_num);
+RcppExport SEXP FastSC3_get_thresholds(SEXP XSEXP, SEXP bin_numSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< int >::type bin_num(bin_numSEXP);
+    __result = Rcpp::wrap(get_thresholds(X, bin_num));
+    return __result;
+END_RCPP
+}
+// signature_mapper
+std::vector< std::string > signature_mapper(arma::mat X, int M, int bin_num);
+RcppExport SEXP FastSC3_signature_mapper(SEXP XSEXP, SEXP MSEXP, SEXP bin_numSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< int >::type M(MSEXP);
+    Rcpp::traits::input_parameter< int >::type bin_num(bin_numSEXP);
+    __result = Rcpp::wrap(signature_mapper(X, M, bin_num));
+    return __result;
+END_RCPP
+}
+// get_buckets
+arma::vec get_buckets(std::vector< std::string > signatures, int P);
+RcppExport SEXP FastSC3_get_buckets(SEXP signaturesSEXP, SEXP PSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< std::vector< std::string > >::type signatures(signaturesSEXP);
+    Rcpp::traits::input_parameter< int >::type P(PSEXP);
+    __result = Rcpp::wrap(get_buckets(signatures, P));
+    return __result;
+END_RCPP
+}
 // calc_delta
 double calc_delta(arma::mat K, int k);
 RcppExport SEXP FastSC3_calc_delta(SEXP KSEXP, SEXP kSEXP) {

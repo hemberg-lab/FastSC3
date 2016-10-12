@@ -72,6 +72,26 @@ normalise_kernel <- function(K) {
     .Call('FastSC3_normalise_kernel', PACKAGE = 'FastSC3', K)
 }
 
+get_span <- function(X) {
+    .Call('FastSC3_get_span', PACKAGE = 'FastSC3', X)
+}
+
+get_hyperplane <- function(span, M) {
+    .Call('FastSC3_get_hyperplane', PACKAGE = 'FastSC3', span, M)
+}
+
+get_thresholds <- function(X, bin_num) {
+    .Call('FastSC3_get_thresholds', PACKAGE = 'FastSC3', X, bin_num)
+}
+
+signature_mapper <- function(X, M, bin_num) {
+    .Call('FastSC3_signature_mapper', PACKAGE = 'FastSC3', X, M, bin_num)
+}
+
+get_buckets <- function(signatures, P) {
+    .Call('FastSC3_get_buckets', PACKAGE = 'FastSC3', signatures, P)
+}
+
 calc_delta <- function(K, k) {
     .Call('FastSC3_calc_delta', PACKAGE = 'FastSC3', K, k)
 }
