@@ -34,18 +34,37 @@ library(scater)
 library(FastSC3)
 library(pheatmap)
 
-treutlein_cell_info <- data.frame(author_clusters = colnames(treutlein))
-cell_inds <- paste("Cell", 1:ncol(treutlein), sep = "_")
-rownames(treutlein_cell_info) <- cell_inds
-treutlein_cell_exprs <- treutlein
-colnames(treutlein_cell_exprs) <- cell_inds
-pd <- new("AnnotatedDataFrame", data = treutlein_cell_info)
-treutlein_sceset <- newSCESet(countData = treutlein_cell_exprs, phenoData = pd)
+# sceset <- create_sceset(readRDS("../../../sanger/scRNA.seq.course.new/deng/deng.rds"))
+# sceset <- create_sceset(readRDS("~/Dropbox/scRNASeq-public-datasets/zeisel.rds"))
+ptm <- proc.time()
+sceset <- create_sceset(readRDS("~/Dropbox/scRNASeq-public-datasets/macosko_norm.rds"))
+sceset <- calculateQCMetrics(sceset)
+# prepare for k prediction
+sceset <- sc3_prepare(sceset, svm.max = Inf, gene.filter = F, log.scale = F)
+# sceset <- sc3_estimate_k(sceset)
+k <- 9
+sceset <- sc3_set_ks(sceset, ks = k)
+# prepare for M3Drop + LSH
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
+sceset <- fsc3_get_signatures(sceset)
+sceset <- fsc3_get_buckets(sceset, common_bits = 75)
+sceset <- fsc3_select_repr_cells(sceset)
+# run normal SC3 pipeline on the selected cells
+sceset <- sc3_calc_dists(sceset)
+sceset <- sc3_calc_transfs(sceset)
+sceset <- sc3_kmeans(sceset)
+sceset <- sc3_calc_consens(sceset)
+# infer cluster indexes from buckets
+sceset <- fsc3_get_clusters(sceset, k = k)
+# summarise results
+sceset <- sc3_summarise_results(sceset, k = k)
+mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
+proc.time() - ptm
 ```
 
 To be able to create plots using `scater` we will also calculate the QC metrics:
 ```{r}
-treutlein_sceset <- calculateQCMetrics(treutlein_sceset)
+sceset <- calculateQCMetrics(sceset)
 ```
 
 ## `sc3_prepare`
@@ -53,38 +72,39 @@ treutlein_sceset <- calculateQCMetrics(treutlein_sceset)
 ```{r}
 # Note that n.cores = 1 is required for compilation of this vignette.
 # Please remove this parameter when running on your computer:
-# treutlein_sceset <- sc3_prepare(treutlein_sceset)
-treutlein_sceset <- sc3_prepare(treutlein_sceset, n.cores = 1)
-treutlein_sceset <- sc3_estimate_k(treutlein_sceset)
-treutlein_sceset <- sc3_set_ks(treutlein_sceset, ks = 5)
+# sceset <- sc3_prepare(sceset)
+sceset <- sc3_prepare(sceset, n.cores = 1)
+sceset <- sc3_estimate_k(sceset)
+sceset <- sc3_set_ks(sceset, ks = 5)
 ```
 
 ```{r}
-treutlein_sceset <- fsc3_fjlt(treutlein_sceset)
-pheatmap::pheatmap(treutlein_sceset@sc3$processed_dataset)
+sceset <- fsc3_fjlt(sceset)
+pheatmap::pheatmap(sceset@sc3$processed_dataset)
 ```
 
 ```{r}
-treutlein_sceset <- sc3_calc_dists(treutlein_sceset)
+sceset <- sc3_calc_dists(sceset)
 ```
 
 ```{r}
-treutlein_sceset <- fsc3_calc_transfs(treutlein_sceset)
+sceset <- fsc3_calc_transfs(sceset)
 ```
 
 ```{r}
-treutlein_sceset <- fsc3_calc_eigenv(treutlein_sceset)
+sceset <- fsc3_calc_eigenv(sceset)
 ```
 
 ```{r}
-treutlein_sceset <- sc3_kmeans(treutlein_sceset)
+sceset <- sc3_kmeans(sceset)
 ```
 
 ```{r}
-treutlein_sceset <- sc3_calc_consens(treutlein_sceset)
+sceset <- sc3_calc_consens(sceset)
 ```
 
 ```{r}
-treutlein_sceset <- sc3_summarise_results(treutlein_sceset, k = 5)
+sceset <- sc3_summarise_results(sceset, k = 5)
 ```
+
 

@@ -1,75 +1,24 @@
 #include <armadillo>
 #include <RcppArmadillo.h>
 #include <boost/dynamic_bitset.hpp>
+#include <vector>
 
 using namespace std;
 using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export]]
-arma::vec get_span(arma::mat X) {
-    int i;
-    arma::rowvec v;
-    arma::vec span(X.n_rows);
-    for(i = 0; i < X.n_rows; i++) {
-        v = X.row(i);
-        span(i) = max(v) - min(v);
-    }
-    return(span);
-}
-
-// [[Rcpp::export]]
-arma::vec get_hyperplane(arma::vec span, int M) {
-    span = cumsum(span/sum(span));
-    arma::vec rnd = randu<vec>(M);
-    arma::vec inds(M);
-    arma::vec span1;
-    for(int i = 0; i < M; i++) {
-        span1 = span.elem( find( span < rnd(i) ) );
-        inds(i) = span1.size();
-    }
-    return(inds);
-}
-
-// [[Rcpp::export]]
-arma::vec get_thresholds(arma::mat X, int bin_num) {
-    arma::vec bin(bin_num - 1);
-    arma::rowvec v;
-    arma::vec v1;
-    arma::vec span(X.n_rows);
-    arma::vec threshold(X.n_rows);
-    for(int i = 0; i < X.n_rows; i++) {
-        v = X.row(i);
-        span(i) = max(v) - min(v);
-        // for(int j = 1; j < bin_num; j++) {
-        //     v1 = v.elem( find(v >= (min(v) + j * span(i) / bin_num) && v <= (min(v) + (j + 1) * span(i) / bin_num)) );
-        //     bin(j - 1) = v1.size();
-        // }
-        // threshold(i) = min(v) + bin.index_max() * span(i) / bin_num;
-        threshold(i) = min(v) + 0.6 * span(i);
-    }
-    return(threshold);
-}
-
-// [[Rcpp::export]]
-std::vector< std::string > signature_mapper(arma::mat X, int M, int bin_num) {
-    arma::vec hyperplane;
+std::vector< std::string > signature_mapper(arma::mat X) {
     string s;
     vector<string> signatures;
-    // calculate all spans
-    arma::vec span = get_span(X);
-    // calculate all thresholds
-    arma::vec thresholds = get_thresholds(X, bin_num);
-    // define a hyperplane
-    hyperplane = get_hyperplane(span, M);
     for(int j = 0; j < X.n_cols; j++) {
         // construct a signature
         s = "";
-        for(int i = 0; i < M; i++) {
-            if(X(hyperplane(i), j) <= thresholds(hyperplane(i))) {
-                s += '0';
-            } else {
+        for(int i = 0; i < X.n_rows; i++) {
+            if(X(i, j) > 0.0) {
                 s += '1';
+            } else {
+                s += '0';
             }
         }
         signatures.push_back(s);

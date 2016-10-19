@@ -13,7 +13,6 @@ Authors@R: c(person("Vladimir", "Kiselev",
 Description: A tool for fast unsupervised clustering and analysis of single cell RNA-Seq data.
 License: GPL-3
 Depends: SC3
-Imports:
-    Rcpp (>= 0.12.6)
+Imports: M3Drop, Rcpp (>= 0.12.6), scater, methods
 LinkingTo: Rcpp, RcppArmadillo, BH
 RoxygenNote: 5.0.1
