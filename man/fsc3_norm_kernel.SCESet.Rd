@@ -18,8 +18,8 @@ fsc3_norm_kernel.SCESet(object)
 an object of 'SCESet' class
 }
 \description{
-Zass, R. & Shashua, A. in Advances in Neural Information Processing 
-Systems 19 (eds. Schölkopf, B., Platt, J. C. & Hoffman, T.) 1569–1576 
+Zass, R. and Shashua, A. in Advances in Neural Information Processing 
+Systems 19 (eds. Scholkopf, B., Platt, J. C. and Hoffman, T.) 1569-1576 
 (MIT Press, 2007).
 }
 

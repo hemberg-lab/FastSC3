@@ -15,6 +15,12 @@ fsc3_select_repr_cells.SCESet(object, d.region.min = 0.04,
 }
 \arguments{
 \item{object}{an object of 'SCESet' class}
+
+\item{d.region.min}{defines the minimum number of eigenvectors used for 
+kmeans clustering as a fraction of the total number of cells. Default is 0.04.}
+
+\item{d.region.max}{defines the maximum number of eigenvectors used for 
+kmeans clustering as a fraction of the total number of cells. Default is 0.07.}
 }
 \value{
 an object of 'SCESet' class

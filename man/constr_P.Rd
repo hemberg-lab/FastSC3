@@ -14,8 +14,6 @@ constr_P(p, k, d, n)
 \item{d}{dimension of the input matrix}
 
 \item{n}{number of cells (columns) in the input matrix}
-
-\item{epsilon}{error tolerance parameter}
 }
 \value{
 matrix P of the FJLT transform

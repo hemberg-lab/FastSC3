@@ -21,10 +21,10 @@ It is based upon the preconditioning of a sparse projection matrix with a
 randomized Fourier transform.
 }
 \details{
-Ailon, N. & Chazelle, B. Approximate nearest neighbors and the fast 
+Ailon, N. and Chazelle, B. Approximate nearest neighbors and the fast 
 Johnson-Lindenstrauss transform. in Proceedings of the thirty-eighth 
 annual ACM symposium on Theory of computing 557–563 (ACM, 2006).
 
-Functions adapted from: http://www.cs.ubc.ca/~jaquesn/MachineLearningTheory.pdf
+Functions adapted from: \url{http://www.cs.ubc.ca/~jaquesn/MachineLearningTheory.pdf}
 }
 

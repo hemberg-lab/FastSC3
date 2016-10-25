@@ -24,7 +24,7 @@ populates back the transformations item the calculated eigenvectors.
 }
 \details{
 Eigenvectors are calculated by using the SS-Nystrom approximation.
-Wang, S., Zhang, C., Qian, H. & Zhang, Z. Improving the Modified NyströM 
+Wang, S., Zhang, C., Qian, H. and Zhang, Z. Improving the Modified NystroM 
 Method Using Spectral Shifting. in Proceedings of the 20th ACM SIGKDD 
 International Conference on Knowledge Discovery and Data Mining 611–620 
 (ACM, 2014).

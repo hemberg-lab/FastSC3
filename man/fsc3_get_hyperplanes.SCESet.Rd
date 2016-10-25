@@ -15,8 +15,6 @@ fsc3_get_hyperplanes.SCESet(object, n_genes = 1000)
 \item{object}{an object of 'SCESet' class}
 
 \item{n_genes}{number of the genes to be returned}
-
-\item{exprs_values}{expression values from the 'SCESet' object to be used}
 }
 \value{
 an object of 'SCESet' class

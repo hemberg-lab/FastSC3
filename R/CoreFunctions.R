@@ -5,11 +5,11 @@
 #' It is based upon the preconditioning of a sparse projection matrix with a 
 #' randomized Fourier transform.
 #' 
-#' Ailon, N. & Chazelle, B. Approximate nearest neighbors and the fast 
+#' Ailon, N. and Chazelle, B. Approximate nearest neighbors and the fast 
 #' Johnson-Lindenstrauss transform. in Proceedings of the thirty-eighth 
 #' annual ACM symposium on Theory of computing 557–563 (ACM, 2006).
 #' 
-#' Functions adapted from: http://www.cs.ubc.ca/~jaquesn/MachineLearningTheory.pdf
+#' Functions adapted from: \url{http://www.cs.ubc.ca/~jaquesn/MachineLearningTheory.pdf}
 #'
 #' @param x input expression matrix
 #' @param k number of dimension to reduce to
@@ -41,6 +41,7 @@ fjlt <- function(x, k = 100) {
 #' @return transformed distance matrix
 #' 
 #' @importFrom SC3 norm_laplacian
+#' @importFrom stats cov
 ftransformation <- function(dists, method) {
     if (method == "pca") {
         covar <- cov(scale(dists, center = TRUE, scale = TRUE))
@@ -50,7 +51,8 @@ ftransformation <- function(dists, method) {
     }
 }
 
-#' @importFrom dplyr %>%
+#' @importFrom dplyr %>% summarise group_by
+#' @importFrom reshape2 melt
 create_data_for_sankey <- function(labs.ref, consens) {
     res.all <- NULL
     for(j in unique(labs.ref)){
@@ -71,7 +73,7 @@ create_data_for_sankey <- function(labs.ref, consens) {
     res <- res[res$value != 0, ]
     
     maxs <- res %>%
-        group_by(Var1) %>%
+        dplyr::group_by(Var1) %>%
         dplyr::summarise(max = max(value))
     
     res <- merge(res, maxs)

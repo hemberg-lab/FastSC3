@@ -5,7 +5,7 @@
 #' It is based upon the preconditioning of a sparse projection matrix with a 
 #' randomized Fourier transform.
 #' 
-#' Ailon, N. & Chazelle, B. Approximate nearest neighbors and the fast 
+#' Ailon, N. and Chazelle, B. Approximate nearest neighbors and the fast 
 #' Johnson-Lindenstrauss transform. in Proceedings of the thirty-eighth 
 #' annual ACM symposium on Theory of computing 557–563 (ACM, 2006).
 #' 
@@ -117,7 +117,7 @@ setMethod("fsc3_calc_transfs", signature(object = "SCESet"), function(object) {
 #' populates back the transformations item the calculated eigenvectors.
 #' 
 #' Eigenvectors are calculated by using the SS-Nystrom approximation.
-#' Wang, S., Zhang, C., Qian, H. & Zhang, Z. Improving the Modified NyströM 
+#' Wang, S., Zhang, C., Qian, H. and Zhang, Z. Improving the Modified NystroM 
 #' Method Using Spectral Shifting. in Proceedings of the 20th ACM SIGKDD 
 #' International Conference on Knowledge Discovery and Data Mining 611–620 
 #' (ACM, 2014).
@@ -182,8 +182,8 @@ setMethod("fsc3_calc_eigenv", signature(object = "SCESet"), function(object) {
 
 #' Calculate doubly-stochastic approximation of the PSD matrix
 #' 
-#' Zass, R. & Shashua, A. in Advances in Neural Information Processing 
-#' Systems 19 (eds. Schölkopf, B., Platt, J. C. & Hoffman, T.) 1569–1576 
+#' Zass, R. and Shashua, A. in Advances in Neural Information Processing 
+#' Systems 19 (eds. Scholkopf, B., Platt, J. C. and Hoffman, T.) 1569-1576 
 #' (MIT Press, 2007).
 #' 
 #' @param object an object of 'SCESet' class
@@ -253,7 +253,6 @@ setMethod("fsc3_norm_kernel", signature(object = "SCESet"), function(object) {
 #' 'sc3' slot of the input object.
 #' 
 #' @param object an object of 'SCESet' class
-#' @param exprs_values expression values from the 'SCESet' object to be used
 #' @param n_genes number of the genes to be returned
 #' 
 #' @return an object of 'SCESet' class
@@ -291,7 +290,6 @@ setMethod("fsc3_get_hyperplanes", signature(object = "SCESet"), function(object,
 #' 
 #' 
 #' @param object an object of 'SCESet' class
-#' @param exprs_values expression values from the 'SCESet' object to be used
 #' 
 #' @importFrom SC3 get_processed_dataset
 #' 
@@ -368,6 +366,10 @@ setMethod("fsc3_get_buckets", signature(object = "SCESet"), function(object, com
 #' Reduce the original dataset by using cell buckets
 #' 
 #' @param object an object of 'SCESet' class
+#' @param d.region.min defines the minimum number of eigenvectors used for 
+#' kmeans clustering as a fraction of the total number of cells. Default is 0.04.
+#' @param d.region.max defines the maximum number of eigenvectors used for 
+#' kmeans clustering as a fraction of the total number of cells. Default is 0.07.
 #' 
 #' @return an object of 'SCESet' class
 #' 

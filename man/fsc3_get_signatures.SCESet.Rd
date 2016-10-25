@@ -13,8 +13,6 @@ fsc3_get_signatures.SCESet(object)
 }
 \arguments{
 \item{object}{an object of 'SCESet' class}
-
-\item{exprs_values}{expression values from the 'SCESet' object to be used}
 }
 \value{
 an object of 'SCESet' class

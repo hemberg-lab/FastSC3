@@ -1,7 +1,6 @@
 #include <armadillo>
 #include <RcppArmadillo.h>
 
-using namespace std;
 using namespace Rcpp;
 using namespace arma;
 
@@ -22,7 +21,6 @@ arma::mat pad_matrix_with_zeros(arma::mat x, int d) {
 
 //' Construct the P matrix for the FJLT transform
 //' 
-//' @param epsilon error tolerance parameter
 //' @param p the norm
 //' @param k dimension we reduce to
 //' @param d dimension of the input matrix
@@ -37,7 +35,7 @@ arma::mat constr_P(int p, int k, int d, int n) {
     // define q
     // p is 2, therefore we can remove the first term from the criteria
     double term = pow(log(n), p)/d;
-    double q = min(term, 1.0);
+    double q = std::min(term, 1.0);
     
     // initialize P
     rowvec tmp = zeros<rowvec>(3);
