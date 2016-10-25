@@ -265,9 +265,9 @@ setMethod("fsc3_norm_kernel", signature(object = "SCESet"), function(object) {
 #' @export
 fsc3_get_hyperplanes.SCESet <- function(object, n_genes = 1000) {
     data <- SC3::get_processed_dataset(object)
-    # if(object@sc3$take_log) {
+    if(object@sc3$take_log) {
         data <- 2^(data) - 1
-    # }
+    }
     if (is.null(data)) {
         warning(paste0("Please run sc3_prepare() first!"))
         return(object)

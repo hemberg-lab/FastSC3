@@ -49,3 +49,44 @@ ftransformation <- function(dists, method) {
         return(norm_laplacian(dists))
     }
 }
+
+#' @importFrom dplyr %>%
+create_data_for_sankey <- function(labs.ref, consens) {
+    res.all <- NULL
+    for(j in unique(labs.ref)){
+        res <- NULL
+        for(i in names(table(consens))) {
+            tmp <- length(intersect(which(consens == i), which(labs.ref == j)))#/length(which(labs.ref == j))
+            res <- c(res, tmp)
+        }
+        res.all <- rbind(res.all, res)
+    }
+    # res.all <- res.all*100
+    colnames(res.all) <- names(table(consens))
+    rownames(res.all) <- unique(labs.ref)
+    
+    res.all <- res.all[order(as.numeric(rownames(res.all))), order(as.numeric(table(consens)), decreasing = T)]
+    # res.all <- log10(res.all + 1)
+    res <- reshape2::melt(res.all)
+    res <- res[res$value != 0, ]
+    
+    maxs <- res %>%
+        group_by(Var1) %>%
+        dplyr::summarise(max = max(value))
+    
+    res <- merge(res, maxs)
+    maxs <- res[res$value == res$max, ]
+    res <- res[res$value != res$max, ]
+    
+    res <- rbind(maxs, res)
+    res <- res[,1:3]
+    
+    # res <- res[,c(2,1,3)]
+    mat<-function(x){
+        return(paste0('["', x[1], ' "," ', x[2], '",', x[3], '],' ))
+    }
+    res.js <- apply(res,1,mat)
+    fileConn<-file("~/Desktop/sankey.txt")
+    writeLines(res.js, fileConn)
+    close(fileConn)
+}

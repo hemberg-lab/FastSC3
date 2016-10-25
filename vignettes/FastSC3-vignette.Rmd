@@ -36,13 +36,15 @@ library(pheatmap)
 
 # sceset <- create_sceset(readRDS("../../../sanger/scRNA.seq.course.new/deng/deng.rds"))
 # sceset <- create_sceset(readRDS("~/Dropbox/scRNASeq-public-datasets/zeisel.rds"))
+# sceset <- create_sceset(readRDS("~/Dropbox/scRNASeq-public-datasets/macosko_norm_no_log.rds"))
+# sceset <- calculateQCMetrics(sceset)
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/macosko_sceset.rds")
+gc()
 ptm <- proc.time()
-sceset <- create_sceset(readRDS("~/Dropbox/scRNASeq-public-datasets/macosko_norm.rds"))
-sceset <- calculateQCMetrics(sceset)
 # prepare for k prediction
-sceset <- sc3_prepare(sceset, svm.max = Inf, gene.filter = F, log.scale = F)
+sceset <- sc3_prepare(sceset, svm.max = Inf, gene.filter = F)
 # sceset <- sc3_estimate_k(sceset)
-k <- 9
+k <- 39
 sceset <- sc3_set_ks(sceset, ks = k)
 # prepare for M3Drop + LSH
 sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
@@ -60,6 +62,7 @@ sceset <- fsc3_get_clusters(sceset, k = k)
 sceset <- sc3_summarise_results(sceset, k = k)
 mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
 proc.time() - ptm
+gc()
 ```
 
 To be able to create plots using `scater` we will also calculate the QC metrics:
