@@ -29,20 +29,30 @@ opts_chunk$set(fig.align = 'center', fig.width = 6, fig.height = 5, dev = 'png')
 
 The input for FastSC3 is an object of class scater. Here we will create it from the dataset ('treutlein') that comes with the package:
 
+Macosko
+
 ```{r, message=FALSE, warning=FALSE}
 library(scater)
 library(FastSC3)
 library(pheatmap)
 
-# sceset <- create_sceset(readRDS("../../../sanger/scRNA.seq.course.new/deng/deng.rds"))
-# sceset <- create_sceset(readRDS("~/Dropbox/scRNASeq-public-datasets/zeisel.rds"))
-# sceset <- create_sceset(readRDS("~/Dropbox/scRNASeq-public-datasets/macosko_norm_no_log.rds"))
+# macosko <- readRDS("~/Dropbox/scRNASeq-public-datasets/macosko.rds")
+# 
+# cell_info <- data.frame(cell_id = colnames(macosko))
+# cell_inds <- paste("Cell", 1:ncol(macosko), sep = "_")
+# rownames(cell_info) <- cell_inds
+# cell_exprs <- macosko
+# colnames(cell_exprs) <- cell_inds
+# pd <- new("AnnotatedDataFrame", data = cell_info)
+# sceset <- newSCESet(countData = cell_exprs, phenoData = pd)
 # sceset <- calculateQCMetrics(sceset)
+# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/macosko_sceset.rds")
+
 sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/macosko_sceset.rds")
 gc()
 ptm <- proc.time()
 # prepare for k prediction
-sceset <- sc3_prepare(sceset, svm.max = Inf, gene.filter = F)
+sceset <- sc3_prepare(sceset, svm.max = Inf)
 # sceset <- sc3_estimate_k(sceset)
 k <- 39
 sceset <- sc3_set_ks(sceset, ks = k)
@@ -50,6 +60,15 @@ sceset <- sc3_set_ks(sceset, ks = k)
 sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
 sceset <- fsc3_get_signatures(sceset)
 sceset <- fsc3_get_buckets(sceset, common_bits = 75)
+
+aris <- NULL
+buckets <- sceset@sc3$buckets
+for(i in 1:ncol(buckets)) {
+    aris <- c(aris, mclust::adjustedRandIndex(buckets[,i], as.numeric(pData(sceset)[,1])))
+}
+boxplot(aris)
+boxplot(apply(buckets, 2, function(x){length(unique(x))}))
+
 sceset <- fsc3_select_repr_cells(sceset)
 # run normal SC3 pipeline on the selected cells
 sceset <- sc3_calc_dists(sceset)
@@ -65,10 +84,48 @@ proc.time() - ptm
 gc()
 ```
 
-To be able to create plots using `scater` we will also calculate the QC metrics:
-```{r}
-sceset <- calculateQCMetrics(sceset)
+
+Pollen
+
+```{r, message=FALSE, warning=FALSE}
+library(scater)
+library(FastSC3)
+
+# pollen2 <- readRDS("~/Dropbox/scRNASeq-public-datasets/pollen2.rds")
+# cell_info <- data.frame(cell_id = colnames(pollen2))
+# cell_inds <- paste("Cell", 1:ncol(pollen2), sep = "_")
+# rownames(cell_info) <- cell_inds
+# cell_exprs <- pollen2
+# colnames(cell_exprs) <- cell_inds
+# pd <- new("AnnotatedDataFrame", data = cell_info)
+# sceset <- newSCESet(tpmData = cell_exprs, phenoData = pd)
+# is_exprs(sceset) <- exprs(sceset) > 0
+# sceset <- calculateQCMetrics(sceset)
+# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/pollen2_sceset.rds")
+
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/pollen2_sceset.rds")
+# prepare for k prediction
+sceset <- sc3_prepare(sceset)
+# sceset <- sc3_estimate_k(sceset)
+k <- 11
+sceset <- sc3_set_ks(sceset, ks = k)
+# prepare for M3Drop + LSH
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
+sceset <- fsc3_get_signatures(sceset)
+sceset <- fsc3_get_buckets(sceset, common_bits = 80)
+sceset <- fsc3_select_repr_cells(sceset)
+# run normal SC3 pipeline on the selected cells
+sceset <- sc3_calc_dists(sceset)
+sceset <- sc3_calc_transfs(sceset)
+sceset <- sc3_kmeans(sceset)
+sceset <- sc3_calc_consens(sceset)
+# infer cluster indexes from buckets
+sceset <- fsc3_get_clusters(sceset, k = k)
+# summarise results
+sceset <- sc3_summarise_results(sceset, k = k)
+mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
 ```
+
 
 ## `sc3_prepare`
 

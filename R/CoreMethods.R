@@ -264,7 +264,7 @@ setMethod("fsc3_norm_kernel", signature(object = "SCESet"), function(object) {
 #' @export
 fsc3_get_hyperplanes.SCESet <- function(object, n_genes = 1000) {
     data <- SC3::get_processed_dataset(object)
-    if(object@sc3$take_log) {
+    if(object@sc3$logged) {
         data <- 2^(data) - 1
     }
     if (is.null(data)) {
@@ -346,11 +346,18 @@ fsc3_get_buckets.SCESet <- function(object, common_bits = NULL) {
         warning(paste0("Number of 'common_bits' must be less than the signature length!"))
         return(object)
     }
-    buckets <- get_buckets(sigs, common_bits)
+    
+    buckets <- NULL
+    for(i in 1:100) {
+        inds <- sample(1:length(sigs))
+        tmp <- get_buckets(sigs[inds], common_bits)
+        buckets <- cbind(buckets, tmp[order(inds)])
+    }
+    
     message(paste0("Number of buckets is ", length(unique(buckets)), ". On average each bucket contains ", round(length(sigs) / length(unique(buckets))), " cells."))
-    p_data <- object@phenoData@data
-    p_data$fsc3_buckets <- buckets
-    pData(object) <- new("AnnotatedDataFrame", data = p_data)
+    # p_data <- object@phenoData@data
+    # p_data$fsc3_buckets <- buckets
+    # pData(object) <- new("AnnotatedDataFrame", data = p_data)
     object@sc3$buckets <- buckets
     return(object)
 }

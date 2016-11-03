@@ -11,11 +11,17 @@ using namespace arma;
 std::vector< std::string > signature_mapper(arma::mat X) {
     string s;
     vector<string> signatures;
+    
+    // if the min is not 0, then find the mean and round it in case there
+    // are problems with presicion;
+    // this should be changed if the cpm normalisation will become standard in
+    // scater package - at the moment cpm convert all zeros to non-zeros...
+    float zero = ceilf(X.min() * 100) / 100;
     for(int j = 0; j < X.n_cols; j++) {
         // construct a signature
         s = "";
         for(int i = 0; i < X.n_rows; i++) {
-            if(X(i, j) > 0.0) {
+            if(X(i, j) > zero) {
                 s += '1';
             } else {
                 s += '0';
@@ -38,7 +44,8 @@ arma::vec get_buckets(std::vector< std::string > signatures, int P) {
             i++;
         }
         boost::dynamic_bitset<> b1(signatures[i]);
-        for(j = i; j < signatures.size(); j++) {
+        buckets(i) = b;
+        for(j = i + 1; j < signatures.size(); j++) {
             if(buckets(j) == 0) {
                 // create a bitset from string j
                 boost::dynamic_bitset<> b2(signatures[j]);
