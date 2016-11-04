@@ -380,7 +380,7 @@ fsc3_get_buckets.SCESet <- function(object, common_bits = NULL) {
     }
     
     buckets <- NULL
-    for(i in 1:100) {
+    for(i in 1:50) {
         inds <- sample(1:length(sigs))
         tmp <- get_buckets(sigs[inds], common_bits)
         buckets <- cbind(buckets, tmp[order(inds)])
