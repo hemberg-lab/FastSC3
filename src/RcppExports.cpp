@@ -102,6 +102,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// signature_mapper_fjlt
+std::vector< std::string > signature_mapper_fjlt(arma::mat X, arma::vec means);
+RcppExport SEXP FastSC3_signature_mapper_fjlt(SEXP XSEXP, SEXP meansSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type means(meansSEXP);
+    rcpp_result_gen = Rcpp::wrap(signature_mapper_fjlt(X, means));
+    return rcpp_result_gen;
+END_RCPP
+}
 // get_buckets
 arma::vec get_buckets(std::vector< std::string > signatures, int P);
 RcppExport SEXP FastSC3_get_buckets(SEXP signaturesSEXP, SEXP PSEXP) {

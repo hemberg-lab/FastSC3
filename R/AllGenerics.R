@@ -29,6 +29,11 @@ setGeneric("fsc3_get_signatures", function(object, ...) {
 })
 
 #' @export
+setGeneric("fsc3_get_signatures_fjlt", function(object, ...) {
+    standardGeneric("fsc3_get_signatures_fjlt")
+})
+
+#' @export
 setGeneric("fsc3_get_buckets", function(object, ...) {
     standardGeneric("fsc3_get_buckets")
 })

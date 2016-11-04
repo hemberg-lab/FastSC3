@@ -33,6 +33,26 @@ std::vector< std::string > signature_mapper(arma::mat X) {
 }
 
 // [[Rcpp::export]]
+std::vector< std::string > signature_mapper_fjlt(arma::mat X, arma::vec means) {
+    string s;
+    vector<string> signatures;
+    
+    for(int j = 0; j < X.n_cols; j++) {
+        // construct a signature
+        s = "";
+        for(int i = 0; i < X.n_rows; i++) {
+            if(X(i, j) >= means(i)) {
+                s += '1';
+            } else {
+                s += '0';
+            }
+        }
+        signatures.push_back(s);
+    }
+    return(signatures);
+}
+
+// [[Rcpp::export]]
 arma::vec get_buckets(std::vector< std::string > signatures, int P) {
     int i, j, b = 1;
     boost::dynamic_bitset<> b3;

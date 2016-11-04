@@ -28,7 +28,7 @@ fsc3_fjlt.SCESet <- function(object, k = 100) {
         warning(paste0("Please run sc3_prepare() first!"))
         return(object)
     }
-    object@sc3$processed_dataset <- fjlt(dataset, k)
+    object@sc3$fjlt <- fjlt(dataset, k)
     return(object)
 }
 
@@ -316,6 +316,38 @@ fsc3_get_signatures.SCESet <- function(object) {
 setMethod("fsc3_get_signatures", signature(object = "SCESet"), function(object) {
     fsc3_get_signatures.SCESet(object)
 })
+
+
+#' Create a binary signature for each cell
+#' 
+#' 
+#' @param object an object of 'SCESet' class
+#' 
+#' @importFrom SC3 get_processed_dataset
+#' 
+#' @return an object of 'SCESet' class
+#' 
+#' @export
+fsc3_get_signatures_fjlt.SCESet <- function(object) {
+    if (is.null(object@sc3$fjlt)) {
+        warning(paste0("Please run fsc3_fjlt() first!"))
+        return(object)
+    }
+    data <- SC3::get_processed_dataset(object)
+    means <- rowMeans(data)
+    object@sc3$signatures <- signature_mapper_fjlt(data, means)
+    names(object@sc3$signatures) <- colnames(data)
+    return(object)
+}
+
+#' @rdname fsc3_get_signatures_fjlt.SCESet
+#' @aliases fsc3_get_signatures_fjlt
+#' @importClassesFrom scater SCESet
+#' @export
+setMethod("fsc3_get_signatures_fjlt", signature(object = "SCESet"), function(object) {
+    fsc3_get_signatures_fjlt.SCESet(object)
+})
+
 
 #' Define buckets of cells based on their signatures
 #' 

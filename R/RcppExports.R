@@ -75,6 +75,10 @@ signature_mapper <- function(X) {
     .Call('FastSC3_signature_mapper', PACKAGE = 'FastSC3', X)
 }
 
+signature_mapper_fjlt <- function(X, means) {
+    .Call('FastSC3_signature_mapper_fjlt', PACKAGE = 'FastSC3', X, means)
+}
+
 get_buckets <- function(signatures, P) {
     .Call('FastSC3_get_buckets', PACKAGE = 'FastSC3', signatures, P)
 }

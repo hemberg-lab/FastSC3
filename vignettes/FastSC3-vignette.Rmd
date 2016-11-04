@@ -126,6 +126,64 @@ sceset <- sc3_summarise_results(sceset, k = k)
 mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
 ```
 
+Kolodziejczyk
+
+```{r, message=FALSE, warning=FALSE}
+library(scater)
+library(FastSC3)
+
+# kolodziejczyk <- readRDS("~/Dropbox/scRNASeq-public-datasets/kolodziejczyk.rds")
+# cell_info <- data.frame(cell_id = colnames(kolodziejczyk))
+# cell_inds <- paste("Cell", 1:ncol(kolodziejczyk), sep = "_")
+# rownames(cell_info) <- cell_inds
+# cell_exprs <- kolodziejczyk
+# colnames(cell_exprs) <- cell_inds
+# pd <- new("AnnotatedDataFrame", data = cell_info)
+# sceset <- newSCESet(cpmData = cell_exprs, phenoData = pd)
+# is_exprs(sceset) <- exprs(sceset) > 0
+# sceset <- calculateQCMetrics(sceset)
+# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/kolodziejczyk_sceset.rds")
+
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/kolodziejczyk_sceset.rds")
+# prepare for k prediction
+sceset <- sc3_prepare(sceset)
+# sceset <- sc3_estimate_k(sceset)
+k <- 11
+sceset <- sc3_set_ks(sceset, ks = k)
+# prepare for M3Drop + LSH
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
+sceset <- fsc3_get_signatures(sceset)
+sceset <- fsc3_get_buckets(sceset, common_bits = 80)
+sceset <- fsc3_select_repr_cells(sceset)
+# run normal SC3 pipeline on the selected cells
+sceset <- sc3_calc_dists(sceset)
+sceset <- sc3_calc_transfs(sceset)
+sceset <- sc3_kmeans(sceset)
+sceset <- sc3_calc_consens(sceset)
+# infer cluster indexes from buckets
+sceset <- fsc3_get_clusters(sceset, k = k)
+# summarise results
+sceset <- sc3_summarise_results(sceset, k = k)
+mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
+```
+
+
+FJLT
+
+```{r}
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/pollen2_sceset.rds")
+# prepare for k prediction
+sceset <- sc3_prepare(sceset)
+# sceset <- sc3_estimate_k(sceset)
+k <- 11
+sceset <- sc3_set_ks(sceset, ks = k)
+# prepare for FJLT + LSH
+sceset <- fsc3_fjlt(sceset)
+sceset <- fsc3_get_signatures_fjlt(sceset)
+sceset <- fsc3_get_buckets(sceset, common_bits = 80)
+```
+
+
 
 ## `sc3_prepare`
 
@@ -140,7 +198,7 @@ sceset <- sc3_set_ks(sceset, ks = 5)
 
 ```{r}
 sceset <- fsc3_fjlt(sceset)
-pheatmap::pheatmap(sceset@sc3$processed_dataset)
+pheatmap::pheatmap(sceset@sc3$fjlt)
 ```
 
 ```{r}
