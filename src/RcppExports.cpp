@@ -6,6 +6,29 @@
 
 using namespace Rcpp;
 
+// get_consensus_string
+std::string get_consensus_string(std::vector< std::string > signatures);
+RcppExport SEXP FastSC3_get_consensus_string(SEXP signaturesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector< std::string > >::type signatures(signaturesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_consensus_string(signatures));
+    return rcpp_result_gen;
+END_RCPP
+}
+// compare_signatures
+std::vector< int > compare_signatures(std::string bsig, std::vector< std::string > signatures);
+RcppExport SEXP FastSC3_compare_signatures(SEXP bsigSEXP, SEXP signaturesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type bsig(bsigSEXP);
+    Rcpp::traits::input_parameter< std::vector< std::string > >::type signatures(signaturesSEXP);
+    rcpp_result_gen = Rcpp::wrap(compare_signatures(bsig, signatures));
+    return rcpp_result_gen;
+END_RCPP
+}
 // pad_matrix_with_zeros
 arma::mat pad_matrix_with_zeros(arma::mat x, int d);
 RcppExport SEXP FastSC3_pad_matrix_with_zeros(SEXP xSEXP, SEXP dSEXP) {

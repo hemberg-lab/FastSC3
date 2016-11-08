@@ -22,7 +22,8 @@ Imports:
     doRNG, 
     dplyr, 
     foreach, 
-    reshape2
+    reshape2,
+    mclust
 LinkingTo: 
     Rcpp, 
     RcppArmadillo, 

@@ -7,9 +7,9 @@
 \alias{fsc3_get_buckets.SCESet}
 \title{Define buckets of cells based on their signatures}
 \usage{
-fsc3_get_buckets.SCESet(object, common_bits = NULL)
+fsc3_get_buckets.SCESet(object, common_bits = NULL, runs = 50)
 
-\S4method{fsc3_get_buckets}{SCESet}(object, common_bits = NULL)
+\S4method{fsc3_get_buckets}{SCESet}(object, common_bits = NULL, runs = 50)
 }
 \arguments{
 \item{object}{an object of 'SCESet' class}

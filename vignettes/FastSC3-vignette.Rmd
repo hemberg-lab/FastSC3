@@ -60,14 +60,7 @@ sceset <- sc3_set_ks(sceset, ks = k)
 sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
 sceset <- fsc3_get_signatures(sceset)
 sceset <- fsc3_get_buckets(sceset, common_bits = 75)
-
-aris <- NULL
-buckets <- sceset@sc3$buckets
-for(i in 1:ncol(buckets)) {
-    aris <- c(aris, mclust::adjustedRandIndex(buckets[,i], as.numeric(pData(sceset)[,1])))
-}
-boxplot(aris)
-boxplot(apply(buckets, 2, function(x){length(unique(x))}))
+sceset <- fsc3_get_buckets_signatures(sceset)
 
 sceset <- fsc3_select_repr_cells(sceset)
 # run normal SC3 pipeline on the selected cells
@@ -113,6 +106,7 @@ sceset <- sc3_set_ks(sceset, ks = k)
 sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
 sceset <- fsc3_get_signatures(sceset)
 sceset <- fsc3_get_buckets(sceset, common_bits = 80)
+sceset <- fsc3_get_buckets_signatures(sceset)
 sceset <- fsc3_select_repr_cells(sceset)
 # run normal SC3 pipeline on the selected cells
 sceset <- sc3_calc_dists(sceset)

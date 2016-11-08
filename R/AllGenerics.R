@@ -39,6 +39,11 @@ setGeneric("fsc3_get_buckets", function(object, ...) {
 })
 
 #' @export
+setGeneric("fsc3_get_buckets_signatures", function(object, ...) {
+    standardGeneric("fsc3_get_buckets_signatures")
+})
+
+#' @export
 setGeneric("fsc3_select_repr_cells", function(object, ...) {
     standardGeneric("fsc3_select_repr_cells")
 })

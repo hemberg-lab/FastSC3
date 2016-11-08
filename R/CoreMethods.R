@@ -360,11 +360,12 @@ setMethod("fsc3_get_signatures_fjlt", signature(object = "SCESet"), function(obj
 #' 
 #' @importFrom scater pData<-
 #' @importFrom methods new
+#' @importFrom mclust adjustedRandIndex
 #' 
 #' @return an object of 'SCESet' class
 #' 
 #' @export
-fsc3_get_buckets.SCESet <- function(object, common_bits = NULL) {
+fsc3_get_buckets.SCESet <- function(object, common_bits = NULL, runs = 50) {
     sigs <- object@sc3$signatures
     if (is.null(sigs)) {
         warning(paste0("Please run fsc3_get_signatures() first!"))
@@ -380,17 +381,30 @@ fsc3_get_buckets.SCESet <- function(object, common_bits = NULL) {
     }
     
     buckets <- NULL
-    for(i in 1:50) {
+    for(i in 1:runs) {
         inds <- sample(1:length(sigs))
         tmp <- get_buckets(sigs[inds], common_bits)
         buckets <- cbind(buckets, tmp[order(inds)])
     }
     
-    message(paste0("Number of buckets is ", length(unique(buckets)), ". On average each bucket contains ", round(length(sigs) / length(unique(buckets))), " cells."))
-    # p_data <- object@phenoData@data
-    # p_data$fsc3_buckets <- buckets
-    # pData(object) <- new("AnnotatedDataFrame", data = p_data)
-    object@sc3$buckets <- buckets
+    S <- NULL
+    for(i in 1:ncol(buckets)) {
+        tmp <- 0
+        for(j in 1:ncol(buckets)) {
+            if(i != j) {
+                tmp <- tmp + mclust::adjustedRandIndex(buckets[, i], buckets[, j])
+            }
+        }
+        S <- c(S, tmp)
+    }
+    
+    res <- buckets[ , sample(which(S == max(S, na.rm = TRUE)), 1)]
+
+    message(paste0("Number of buckets is ", length(unique(res)), ". On average each bucket contains ", round(length(sigs) / length(unique(res))), " cells."))
+    p_data <- object@phenoData@data
+    p_data$fsc3_buckets <- res
+    pData(object) <- new("AnnotatedDataFrame", data = p_data)
+    object@sc3$buckets <- res
     return(object)
 }
 
@@ -398,9 +412,54 @@ fsc3_get_buckets.SCESet <- function(object, common_bits = NULL) {
 #' @aliases fsc3_get_buckets
 #' @importClassesFrom scater SCESet
 #' @export
-setMethod("fsc3_get_buckets", signature(object = "SCESet"), function(object, common_bits = NULL) {
-    fsc3_get_buckets.SCESet(object, common_bits)
+setMethod("fsc3_get_buckets", signature(object = "SCESet"), function(object, common_bits = NULL, runs = 50) {
+    fsc3_get_buckets.SCESet(object, common_bits, runs)
 })
+
+#' Calculate average bucket signatures
+#' 
+#' When the cell buckets are defined, it is possible to calculate an average
+#' bucket signature based on the signatures of the cells contained in a given
+#' bucket.
+#' 
+#' @param object an object of 'SCESet' class
+#' 
+#' @return an object of 'SCESet' class
+#' 
+#' @export
+fsc3_get_buckets_signatures.SCESet <- function(object) {
+    sigs <- object@sc3$signatures
+    buckets <- object@sc3$buckets
+    if (is.null(sigs)) {
+        warning(paste0("Please run fsc3_get_signatures() and fsc3_get_buckets() first!"))
+        return(object)
+    }
+    if (is.null(buckets)) {
+        warning(paste0("Please run fsc3_get_buckets() first!"))
+        return(object)
+    }
+    
+    bsigs <- NULL
+    for(i in unique(buckets)) {
+        tmp <- get_consensus_string(sigs[buckets == i])
+        bsigs <- c(bsigs, tmp)
+    }
+    
+    res <- data.frame(bucket = unique(buckets), signature = bsigs, stringsAsFactors = F)
+    res$bucket <- as.numeric(res$bucket)
+
+    object@sc3$buckets_signatures <- res
+    return(object)
+}
+
+#' @rdname fsc3_get_buckets_signatures.SCESet
+#' @aliases fsc3_get_buckets_signatures
+#' @importClassesFrom scater SCESet
+#' @export
+setMethod("fsc3_get_buckets_signatures", signature(object = "SCESet"), function(object) {
+    fsc3_get_buckets_signatures.SCESet(object)
+})
+
 
 #' Reduce the original dataset by using cell buckets
 #' 
@@ -414,20 +473,31 @@ setMethod("fsc3_get_buckets", signature(object = "SCESet"), function(object, com
 #' 
 #' @export
 fsc3_select_repr_cells.SCESet <- function(object, d.region.min = 0.04, d.region.max = 0.07) {
+    sigs <- object@sc3$signatures
     buckets <- object@sc3$buckets
+    buckets_sigs <- object@sc3$buckets_signatures
+    if (is.null(sigs)) {
+        warning(paste0("Please run fsc3_get_signatures() first!"))
+        return(object)
+    }
     if (is.null(buckets)) {
         warning(paste0("Please run fsc3_get_buckets() first!"))
         return(object)
     }
+    if (is.null(buckets_sigs)) {
+        warning(paste0("Please run fsc3_get_buckets_signatures() first!"))
+        return(object)
+    }
     
     inds <- NULL
-    for(i in 1:length(unique(buckets))) {
-        if(length(which(buckets == i)) != 1) {
-            inds <- c(inds, sample(which(buckets == i), 1))
-        } else {
-            inds <- c(inds, which(buckets == i))
-        }
+    for(i in unique(buckets)) {
+        bsig <- buckets_sigs[buckets_sigs$bucket == i, ]$signature
+        csigs <- sigs[which(buckets == i)]
+        res <- compare_signatures(bsig, csigs)
+        ind <- which(buckets == i)[sample(which(res == max(res, na.rm = TRUE)), 1)]
+        inds <- c(inds, ind)
     }
+
     # the concept is similar to SVM, when clustering is performed on a subset of
     # cells, therefore the 'svm_train_inds' slot is used to store the indices of the
     # cells selected for clustering
