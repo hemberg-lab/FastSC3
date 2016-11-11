@@ -51,24 +51,40 @@ ftransformation <- function(dists, method) {
     }
 }
 
+#' Plot Sankey diagram comparing two clusterings
+#' 
+#' Sometimes it is useful to see how the clusters in two different clustering
+#' solutions correspond to each other. Sankey diagram is a good way to visualize
+#' them. This function takes as input two clustering solutions and visualizes them
+#' using a Sankey diagram. The order of the reference clusters is defined by their
+#' labels in increasing order.
+#' 
+#' @param reference reference clustering labels
+#' @param clusters clustering labels under investigations
+#' @param plot_width width of the output plot in pixels
+#' @param colors colors of the links between two clusterings. If defined please
+#' note that each cluster in the reference clustering has to have its own color.
+#' This should be a normal text vector, e.g. c("#FF0000", "#FFA500", "#008000")
+#' 
 #' @importFrom dplyr %>% summarise group_by
 #' @importFrom reshape2 melt
-create_data_for_sankey <- function(labs.ref, consens) {
+#' @importFrom googleVis gvisSankey
+plot_sankey <- function(reference, clusters, plot_width = 400, colors = "#808080") {
     res.all <- NULL
-    for(j in unique(labs.ref)){
+    for(j in unique(reference)){
         res <- NULL
-        for(i in names(table(consens))) {
-            tmp <- length(intersect(which(consens == i), which(labs.ref == j)))#/length(which(labs.ref == j))
+        for(i in names(table(clusters))) {
+            tmp <- length(intersect(which(clusters == i), which(reference == j)))
             res <- c(res, tmp)
         }
         res.all <- rbind(res.all, res)
     }
-    # res.all <- res.all*100
-    colnames(res.all) <- names(table(consens))
-    rownames(res.all) <- unique(labs.ref)
+    colnames(res.all) <- names(table(clusters))
+    rownames(res.all) <- unique(reference)
     
-    res.all <- res.all[order(as.numeric(rownames(res.all))), order(as.numeric(table(consens)), decreasing = T)]
-    # res.all <- log10(res.all + 1)
+    res.all <- res.all[order(as.numeric(rownames(res.all))), 
+                       order(as.numeric(table(clusters)), decreasing = T)]
+    
     res <- reshape2::melt(res.all)
     res <- res[res$value != 0, ]
     
@@ -79,16 +95,45 @@ create_data_for_sankey <- function(labs.ref, consens) {
     res <- merge(res, maxs)
     maxs <- res[res$value == res$max, ]
     res <- res[res$value != res$max, ]
-    
     res <- rbind(maxs, res)
     res <- res[,1:3]
     
-    # res <- res[,c(2,1,3)]
-    mat<-function(x){
-        return(paste0('["', x[1], ' "," ', x[2], '",', x[3], '],' ))
-    }
-    res.js <- apply(res,1,mat)
-    fileConn<-file("~/Desktop/sankey.txt")
-    writeLines(res.js, fileConn)
-    close(fileConn)
+    # remove cycles from the data
+    res[, 1] <- paste0(res[, 1], " ")
+    res[, 2] <- paste0(" ", res[, 2])
+    
+    colnames(res) <- c("From", "To", "Weight")
+    
+    colors <- paste(colors, collapse = "', '")
+    colors <- paste0("['", colors, "']")
+
+    Sankey <- gvisSankey(
+        res,
+        from="From",
+        to="To",
+        weight="Weight",
+        options = list(
+            width = plot_width, 
+            sankey = paste0("{
+                node:{
+                    label:{
+                        fontName:'Arial',
+                        fontSize:11,color:
+                        '#000000',
+                        bold:true,
+                        italic:false
+                    },
+                    colors:'#FFFFFF',
+                    nodePadding:12
+                },
+                link:{
+                    colorMode: 'source',
+                    colors: ", colors, "
+                },
+                iterations:0
+            }"
+        ))
+    )
+    
+    plot(Sankey)
 }

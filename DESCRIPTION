@@ -23,7 +23,8 @@ Imports:
     dplyr, 
     foreach, 
     reshape2,
-    mclust
+    mclust,
+    googleVis
 LinkingTo: 
     Rcpp, 
     RcppArmadillo, 
