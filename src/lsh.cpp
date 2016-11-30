@@ -12,7 +12,7 @@ std::vector< std::string > signature_mapper(arma::mat X) {
     string s;
     vector<string> signatures;
     
-    // if the min is not 0, then find the mean and round it in case there
+    // if the min is not 0, then find the min and round it in case there
     // are problems with presicion;
     // this should be changed if the cpm normalisation will become standard in
     // scater package - at the moment cpm convert all zeros to non-zeros...

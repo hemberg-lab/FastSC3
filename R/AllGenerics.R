@@ -19,8 +19,13 @@ setGeneric("fsc3_norm_kernel", function(object, ...) {
 })
 
 #' @export
-setGeneric("fsc3_get_hyperplanes", function(object, ...) {
-    standardGeneric("fsc3_get_hyperplanes")
+setGeneric("fsc3_get_features", function(object, ...) {
+    standardGeneric("fsc3_get_features")
+})
+
+#' @export
+setGeneric("fsc3_set_features", function(object, ...) {
+    standardGeneric("fsc3_set_features")
 })
 
 #' @export

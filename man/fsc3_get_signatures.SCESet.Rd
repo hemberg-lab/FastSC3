@@ -7,12 +7,14 @@
 \alias{fsc3_get_signatures.SCESet}
 \title{Create a binary signature for each cell}
 \usage{
-fsc3_get_signatures.SCESet(object)
+fsc3_get_signatures.SCESet(object, exprs_values = "exprs")
 
 \S4method{fsc3_get_signatures}{SCESet}(object)
 }
 \arguments{
 \item{object}{an object of 'SCESet' class}
+
+\item{exprs_values}{}
 }
 \value{
 an object of 'SCESet' class

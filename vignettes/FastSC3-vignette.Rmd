@@ -37,7 +37,8 @@ library(FastSC3)
 library(pheatmap)
 
 # macosko <- readRDS("~/Dropbox/scRNASeq-public-datasets/macosko.rds")
-# 
+# macosko <- macosko[!duplicated(unlist(lapply(strsplit(rownames(macosko), ":"), "[[", 3))), ]
+# rownames(macosko) <- unlist(lapply(strsplit(rownames(macosko), ":"), "[[", 3))
 # cell_info <- data.frame(cell_id = colnames(macosko))
 # cell_inds <- paste("Cell", 1:ncol(macosko), sep = "_")
 # rownames(cell_info) <- cell_inds
@@ -46,18 +47,15 @@ library(pheatmap)
 # pd <- new("AnnotatedDataFrame", data = cell_info)
 # sceset <- newSCESet(countData = cell_exprs, phenoData = pd)
 # sceset <- calculateQCMetrics(sceset)
-# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/macosko_sceset.rds")
+# sceset@featureData@data$feature_symbol <- featureNames(sceset)
+# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/drosophila-retina/macosko_sceset.rds")
 
-sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/macosko_sceset.rds")
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/macosko_sceset.rds")
 gc()
 ptm <- proc.time()
 # prepare for k prediction
-sceset <- sc3_prepare(sceset, svm.max = Inf)
-# sceset <- sc3_estimate_k(sceset)
-k <- 39
-sceset <- sc3_set_ks(sceset, ks = k)
-# prepare for M3Drop + LSH
-sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
+sceset <- sc3_prepare(sceset, ks = 38:40, svm_max = Inf)
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100, suppress_plot = F)
 sceset <- fsc3_get_signatures(sceset)
 sceset <- fsc3_get_buckets(sceset, common_bits = 75)
 sceset <- fsc3_get_buckets_signatures(sceset)
@@ -76,6 +74,49 @@ mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sces
 proc.time() - ptm
 gc()
 ```
+
+
+Shekhar
+
+```{r, message=FALSE, warning=FALSE}
+library(scater)
+library(FastSC3)
+library(pheatmap)
+
+# shekhar <- readRDS("~/Dropbox/scRNASeq-public-datasets/shekhar.rds")
+# cell_info <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/shekhar_ann.rds")
+# pd <- new("AnnotatedDataFrame", data = cell_info)
+# sceset <- newSCESet(countData = shekhar, phenoData = pd)
+# sceset <- calculateQCMetrics(sceset)
+# sceset@featureData@data$feature_symbol <- featureNames(sceset)
+# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/drosophila-retina/shekhar_sceset.rds")
+
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/shekhar_sceset.rds")
+gc()
+ptm <- proc.time()
+# prepare for k prediction
+sceset <- sc3_prepare(sceset, ks = 2:26, svm_max = Inf)
+sceset <- fsc3_get_features(sceset, n_genes = 100, suppress_plot = F)
+sceset <- fsc3_get_signatures(sceset)
+sceset <- fsc3_get_buckets(sceset, common_bits = 61, runs = 10)
+sceset <- fsc3_get_buckets_signatures(sceset)
+mclust::adjustedRandIndex(sceset@sc3$buckets, as.numeric(pData(sceset)[,1]))
+sceset <- fsc3_select_repr_cells(sceset)
+# run normal SC3 pipeline on the selected cells
+sceset <- sc3_calc_dists(sceset)
+sceset <- sc3_calc_transfs(sceset)
+sceset <- sc3_kmeans(sceset)
+sceset <- sc3_calc_consens(sceset)
+# infer cluster indexes from buckets
+sceset <- fsc3_get_clusters(sceset, k = 10)
+# summarise results
+sceset <- sc3_summarise_results(sceset, k = 10)
+mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
+proc.time() - ptm
+gc()
+```
+
+
 
 
 Pollen
@@ -98,14 +139,12 @@ library(FastSC3)
 
 sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/pollen2_sceset.rds")
 # prepare for k prediction
-sceset <- sc3_prepare(sceset)
-# sceset <- sc3_estimate_k(sceset)
-k <- 11
-sceset <- sc3_set_ks(sceset, ks = k)
+sceset <- sc3_prepare(sceset, ks = 8:14)
 # prepare for M3Drop + LSH
-sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100, suppress_plot = F)
 sceset <- fsc3_get_signatures(sceset)
-sceset <- fsc3_get_buckets(sceset, common_bits = 80)
+sceset <- fsc3_get_buckets(sceset, common_bits = 75)
+mclust::adjustedRandIndex(sceset@sc3$buckets, as.numeric(pData(sceset)[,1]))
 sceset <- fsc3_get_buckets_signatures(sceset)
 sceset <- fsc3_select_repr_cells(sceset)
 # run normal SC3 pipeline on the selected cells
@@ -114,11 +153,101 @@ sceset <- sc3_calc_transfs(sceset)
 sceset <- sc3_kmeans(sceset)
 sceset <- sc3_calc_consens(sceset)
 # infer cluster indexes from buckets
-sceset <- fsc3_get_clusters(sceset, k = k)
+sceset <- fsc3_get_clusters(sceset, k = 11)
 # summarise results
-sceset <- sc3_summarise_results(sceset, k = k)
+sceset <- sc3_summarise_results(sceset, k = 11)
+mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
+plot_sankey(as.numeric(pData(sceset)[,1]), sceset@sc3$results$clusters[,1])
+```
+
+Zeisel
+
+```{r, message=FALSE, warning=FALSE}
+library(scater)
+library(FastSC3)
+
+# zeisel <- readRDS("~/Dropbox/scRNASeq-public-datasets/zeisel.rds")
+# cell_info <- data.frame(cell_id = colnames(zeisel))
+# cell_inds <- paste("Cell", 1:ncol(zeisel), sep = "_")
+# rownames(cell_info) <- cell_inds
+# cell_exprs <- zeisel
+# colnames(cell_exprs) <- cell_inds
+# pd <- new("AnnotatedDataFrame", data = cell_info)
+# sceset <- newSCESet(countData = cell_exprs, phenoData = pd)
+# sceset <- calculateQCMetrics(sceset)
+# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/zeisel_sceset.rds")
+
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/zeisel_sceset.rds")
+# prepare for k prediction
+sceset <- sc3_prepare(sceset)
+# sceset <- sc3_estimate_k(sceset)
+k <- 5:11
+sceset <- sc3_set_ks(sceset, ks = k)
+# prepare for M3Drop + LSH
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 10, suppress_plot = F)
+sceset <- fsc3_get_signatures(sceset)
+sceset <- fsc3_get_buckets(sceset, common_bits = 7)
+# mclust::adjustedRandIndex(sceset@sc3$buckets, as.numeric(pData(sceset)[,1]))
+sceset <- fsc3_get_buckets_signatures(sceset)
+sceset <- fsc3_select_repr_cells(sceset)
+# run normal SC3 pipeline on the selected cells
+sceset <- sc3_calc_dists(sceset)
+sceset <- sc3_calc_transfs(sceset)
+sceset <- sc3_kmeans(sceset)
+sceset <- sc3_calc_consens(sceset)
+# infer cluster indexes from buckets
+sceset <- fsc3_get_clusters(sceset, k = 8)
+# summarise results
+sceset <- sc3_summarise_results(sceset, k = 8)
+mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
+plot_sankey(as.numeric(pData(sceset)[,1]), sceset@sc3$results$clusters[,1])
+```
+
+
+Klein
+
+```{r, message=FALSE, warning=FALSE}
+library(scater)
+library(FastSC3)
+
+# klein <- readRDS("~/Dropbox/scRNASeq-public-datasets/klein.rds")
+# cell_info <- data.frame(cell_id = colnames(klein))
+# cell_inds <- paste("Cell", 1:ncol(klein), sep = "_")
+# rownames(cell_info) <- cell_inds
+# cell_exprs <- klein
+# colnames(cell_exprs) <- cell_inds
+# pd <- new("AnnotatedDataFrame", data = cell_info)
+# sceset <- newSCESet(countData = cell_exprs, phenoData = pd)
+# sceset <- calculateQCMetrics(sceset)
+# saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/klein_sceset.rds")
+
+sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/klein_sceset.rds")
+# prepare for k prediction
+sceset <- sc3_prepare(sceset)
+# sceset <- sc3_estimate_k(sceset)
+k <- 3:6
+sceset <- sc3_set_ks(sceset, ks = k)
+# prepare for M3Drop + LSH
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100, suppress_plot = F)
+sceset <- fsc3_get_signatures(sceset)
+sceset <- fsc3_get_buckets(sceset, common_bits = 65, runs = 10)
+mclust::adjustedRandIndex(sceset@sc3$buckets, as.numeric(pData(sceset)[,1]))
+sceset <- fsc3_get_buckets_signatures(sceset)
+sceset <- fsc3_select_repr_cells(sceset)
+# run normal SC3 pipeline on the selected cells
+sceset <- sc3_calc_dists(sceset)
+sceset <- sc3_calc_transfs(sceset)
+sceset <- sc3_kmeans(sceset)
+sceset <- sc3_calc_consens(sceset)
+# infer cluster indexes from buckets
+sceset <- fsc3_get_clusters(sceset, k = 4)
+# summarise results
+sceset <- sc3_summarise_results(sceset, k = 4)
 mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
 ```
+
+
+
 
 Kolodziejczyk
 
@@ -133,7 +262,7 @@ library(FastSC3)
 # cell_exprs <- kolodziejczyk
 # colnames(cell_exprs) <- cell_inds
 # pd <- new("AnnotatedDataFrame", data = cell_info)
-# sceset <- newSCESet(cpmData = cell_exprs, phenoData = pd)
+# sceset <- newSCESet(tpmData = cell_exprs, phenoData = pd)
 # is_exprs(sceset) <- exprs(sceset) > 0
 # sceset <- calculateQCMetrics(sceset)
 # saveRDS(sceset, file = "~/Dropbox/scRNASeq-public-datasets/kolodziejczyk_sceset.rds")
@@ -142,12 +271,14 @@ sceset <- readRDS("~/Dropbox/scRNASeq-public-datasets/kolodziejczyk_sceset.rds")
 # prepare for k prediction
 sceset <- sc3_prepare(sceset)
 # sceset <- sc3_estimate_k(sceset)
-k <- 11
+k <- 3:5
 sceset <- sc3_set_ks(sceset, ks = k)
 # prepare for M3Drop + LSH
-sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100)
+sceset <- fsc3_get_hyperplanes(sceset, n_genes = 100, suppress_plot = F)
 sceset <- fsc3_get_signatures(sceset)
-sceset <- fsc3_get_buckets(sceset, common_bits = 80)
+sceset <- fsc3_get_buckets(sceset, common_bits = 70)
+mclust::adjustedRandIndex(sceset@sc3$buckets, as.numeric(pData(sceset)[,1]))
+sceset <- fsc3_get_buckets_signatures(sceset)
 sceset <- fsc3_select_repr_cells(sceset)
 # run normal SC3 pipeline on the selected cells
 sceset <- sc3_calc_dists(sceset)
@@ -155,9 +286,9 @@ sceset <- sc3_calc_transfs(sceset)
 sceset <- sc3_kmeans(sceset)
 sceset <- sc3_calc_consens(sceset)
 # infer cluster indexes from buckets
-sceset <- fsc3_get_clusters(sceset, k = k)
+sceset <- fsc3_get_clusters(sceset, k = 3)
 # summarise results
-sceset <- sc3_summarise_results(sceset, k = k)
+sceset <- sc3_summarise_results(sceset, k = 3)
 mclust::adjustedRandIndex(sceset@sc3$results$clusters[,1], as.numeric(pData(sceset)[,1]))
 ```
 
@@ -219,4 +350,247 @@ sceset <- sc3_calc_consens(sceset)
 sceset <- sc3_summarise_results(sceset, k = 5)
 ```
 
+
+
+
+# Out of sample extension
+
+## Drosophila retina
+
+```{r}
+shekhar <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/shekhar_sceset.rds")
+shekhar <- fsc3_get_features(shekhar)
+
+macosko <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/macosko_sceset.rds")
+macosko <- fsc3_get_features(macosko)
+
+common_features <- get_common_fsc3_features(list(shekhar, macosko))
+
+shekhar <- fsc3_set_features(shekhar, common_features)
+macosko <- fsc3_set_features(macosko, common_features)
+
+shekhar <- fsc3_get_signatures(shekhar)
+macosko <- fsc3_get_signatures(macosko)
+
+# Assignments based on Shekhar
+
+p_data <- pData(shekhar)
+p_data$fsc3_buckets <- as.numeric(p_data$louvain_clusts)
+pData(shekhar) <- new("AnnotatedDataFrame", data = p_data)
+
+macosko <- fsc3_assign_signatures(macosko, shekhar)
+plot_sankey(pData(macosko)$cell_id, pData(macosko)$fsc3_buckets_assigned, colors = c("#FF0000","#FFA500","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#57A5D6","#57A5D6","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#800080","#800080","#800080","#800080","#800080","#800080"))
+mclust::adjustedRandIndex(pData(macosko)$cell_id, pData(macosko)$fsc3_buckets_assigned)
+
+# Assignments based on Macosko
+
+p_data <- pData(macosko)
+p_data$fsc3_buckets <- as.numeric(p_data$cell_id)
+pData(macosko) <- new("AnnotatedDataFrame", data = p_data)
+
+shekhar <- fsc3_assign_signatures(shekhar, macosko)
+plot_sankey(pData(shekhar)$louvain_clusts, pData(shekhar)$fsc3_buckets_assigned, colors = c("#0000FF", "#800080", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#008000", "#000000", "#000000", "#000000", "#57A5D6", "#000000", "#57A5D6", "#000000", "#000000", "#000000", "#000000"))
+mclust::adjustedRandIndex(pData(shekhar)$louvain_clusts, pData(shekhar)$fsc3_buckets_assigned)
+
+```
+
+
+## Embryo development
+
+## Deng
+
+```{r}
+# d <- readRDS("~/Dropbox/scRNASeq-public-datasets/deng.rds")
+# #  1   1-4 - zygote
+# #  2   5-12 - early2cell
+# #  3   13-24 - mid2cell
+# #  4   25-34 - late2cell
+# #  5   35-48 - 4cell
+# #  6   49-85 - 8cell
+# #  7   86-135 - 16cell
+# #  8   136-178 - earlyblast
+# #  9   179-238 - midblast
+# #  10   239-268 - lateblast
+# labs <- colnames(d)
+# labs[labs == "1" | labs == "2"] = "zygote"
+# labs[labs == "3" | labs == "4"] = "2cell"
+# labs[labs == "5"] = "4cell"
+# labs[labs == "6"] = "8cell"
+# labs[labs == "7"] = "16cell"
+# labs[labs == "8" | labs == "9" | labs == "10"] = "blast"
+# ann <- data.frame(stage = labs)
+# rownames(ann) <- paste("cell", 1:ncol(d), sep = "_")
+# pd <- new("AnnotatedDataFrame", data = ann)
+# d <- d[!duplicated(rownames(d)), ]
+# colnames(d) <- rownames(ann)
+# deng <- newSCESet(fpkmData = d, phenoData = pd)
+# is_exprs(deng) <- exprs(deng) > 0
+# deng <- calculateQCMetrics(deng)
+# # use gene names as feature symbols
+# deng@featureData@data$feature_symbol <- featureNames(deng)
+# saveRDS(deng, "~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/deng_rpkm_sceset.rds")
+```
+
+## Biase
+
+```{r}
+# d <- read.table("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/intermediate/GSE57249_fpkm_ZHONG.txt", header = T)
+# d <- d[!duplicated(d$ID),]
+# rownames(d) <- d$ID
+# d <- d[,2:ncol(d)]
+# 
+# # options(stringsAsFactors = F)
+# 
+# labs <- read.table("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/intermediate/GSE57249_labels_ZHONG.txt", stringsAsFactors = F)
+# labs <- as.character(labs)
+# 
+# labs[grep("TE",labs)] = "blast"
+# labs[grep("ICM",labs)] = "blast"
+# 
+# ann <- data.frame(stage = labs)
+# rownames(ann) <- colnames(d)
+# 
+# colnames(d) <- rownames(ann)
+# pd <- new("AnnotatedDataFrame", data = ann)
+# biase <- newSCESet(fpkmData = as.matrix(d), phenoData = pd)
+# is_exprs(biase) <- exprs(biase) > 0
+# biase <- calculateQCMetrics(biase)
+# # use gene names as feature symbols
+# biase@featureData@data$feature_symbol <- featureNames(biase)
+# saveRDS(biase, "~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/biase_fpkm.rds")
+```
+
+## Goolam
+
+```{r}
+d <- read.table("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/intermediate/Goolam_et_al_2015_count_table.tsv", header = T)
+
+labs <- colnames(d)
+labs[grep("4cell",labs)] = "4cell"
+labs[grep("8cell",labs)] = "8cell"
+labs[grep("16cell",labs)] = "16cell"
+labs[grep("32cell",labs)] = "blast"
+labs[grep("2cell",labs)] = "2cell"
+
+ann <- data.frame(stage = labs)
+rownames(ann) <- colnames(d)
+colnames(d) <- rownames(ann)
+pd <- new("AnnotatedDataFrame", data = ann)
+goolam <- newSCESet(countData = as.matrix(d), phenoData = pd)
+goolam <- calculateQCMetrics(goolam, feature_controls = grep("ERCC-", rownames(d)))
+# convert ensembl ids into gene names
+goolam <- getBMFeatureAnnos(
+    goolam, filters="ensembl_gene_id",
+    biomart="ensembl", dataset="mmusculus_gene_ensembl")
+# saveRDS(goolam, "~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/goolam_counts.rds")
+```
+
+## Fan
+
+```{r}
+# d <- read.table("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/intermediate/GSE53386_matrix_fpkms.tsv")
+# 
+# labs <- colnames(d)
+# labs[grep("ocyte",labs)] = "zygote"
+# labs[grep("zygote",labs)] = "zygote"
+# labs[grep("a.AM",labs)] = "zygote"
+# labs[grep("2.cell",labs)] = "2cell"
+# labs[grep("4.cell",labs)] = "4cell"
+# labs[grep("8.cell",labs)] = "8cell"
+# labs[grep("morula",labs)] = "16cell"
+# labs[grep("ICM",labs)] = "blast"
+# labs[grep("TE",labs)] = "blast"
+# labs[grep("blast",labs)] = "blast"
+# 
+# ann <- data.frame(stage = labs)
+# rownames(ann) <- colnames(d)
+# 
+# colnames(d) <- rownames(ann)
+# pd <- new("AnnotatedDataFrame", data = ann)
+# fan <- newSCESet(fpkmData = as.matrix(d), phenoData = pd)
+# is_exprs(fan) <- exprs(fan) > 0
+# fan <- calculateQCMetrics(fan)
+# # use gene names as feature symbols
+# fan@featureData@data$feature_symbol <- featureNames(fan)
+# saveRDS(fan, "~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/fan_fpkm.rds")
+```
+
+```{r}
+deng_rpkm <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/deng_rpkm_sceset.rds")
+deng_rpkm <- fsc3_get_features(deng_rpkm, n_genes = 1000)
+biase_fpkm <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/biase_fpkm.rds")
+biase_fpkm <- fsc3_get_features(biase_fpkm, n_genes = 1000)
+goolam_counts <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/goolam_counts.rds")
+goolam_counts <- fsc3_get_features(goolam_counts, n_genes = 1000)
+fan_fpkm <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/fan_fpkm.rds")
+fan_fpkm <- fsc3_get_features(fan_fpkm, n_genes = 1000)
+
+common_features <- get_common_fsc3_features(list(deng_rpkm, goolam_counts, biase_fpkm, fan_fpkm))
+
+deng_rpkm <- fsc3_set_features(deng_rpkm, common_features)
+biase_fpkm <- fsc3_set_features(biase_fpkm, common_features)
+goolam_counts <- fsc3_set_features(goolam_counts, common_features)
+fan_fpkm <- fsc3_set_features(fan_fpkm, common_features)
+
+deng_rpkm <- fsc3_get_signatures(deng_rpkm)
+biase_fpkm <- fsc3_get_signatures(biase_fpkm)
+goolam_counts <- fsc3_get_signatures(goolam_counts)
+fan_fpkm <- fsc3_get_signatures(fan_fpkm)
+
+# Assignments based on Deng
+
+p_data <- pData(deng_rpkm)
+p_data$fsc3_buckets <- p_data$stage
+pData(deng_rpkm) <- new("AnnotatedDataFrame", data = p_data)
+
+goolam_counts <- fsc3_assign_signatures(goolam_counts, deng_rpkm)
+plot_sankey(pData(goolam_counts)$stage, pData(goolam_counts)$fsc3_buckets_assigned)
+mclust::adjustedRandIndex(pData(goolam_counts)$stage, pData(goolam_counts)$fsc3_buckets_assigned)
+
+biase_fpkm <- fsc3_assign_signatures(biase_fpkm, deng_rpkm)
+plot_sankey(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
+mclust::adjustedRandIndex(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
+
+fan_fpkm <- fsc3_assign_signatures(fan_fpkm, deng_rpkm)
+plot_sankey(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
+mclust::adjustedRandIndex(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
+
+# Assignments based on Goolam
+
+p_data <- pData(goolam_counts)
+p_data$fsc3_buckets <- p_data$stage
+pData(goolam_counts) <- new("AnnotatedDataFrame", data = p_data)
+
+biase_fpkm <- fsc3_assign_signatures(biase_fpkm, goolam_counts)
+plot_sankey(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
+mclust::adjustedRandIndex(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
+
+deng_rpkm <- fsc3_assign_signatures(deng_rpkm, goolam_counts)
+plot_sankey(pData(deng_rpkm)$stage, pData(deng_rpkm)$fsc3_buckets_assigned)
+mclust::adjustedRandIndex(pData(deng_rpkm)$stage, pData(deng_rpkm)$fsc3_buckets_assigned)
+
+fan_fpkm <- fsc3_assign_signatures(fan_fpkm, goolam_counts)
+plot_sankey(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
+mclust::adjustedRandIndex(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
+
+
+# Compare expressions
+
+p <- fsc3_plot_sig_expression(deng_rpkm, fColumn = "stage")
+fsc3_plot_sig_expression(goolam_counts, fColumn = "stage", hc = p$tree_row)
+fsc3_plot_sig_expression(fan_fpkm, fColumn = "stage", hc = p$tree_row)
+fsc3_plot_sig_expression(biase_fpkm, fColumn = "stage", hc = p$tree_row)
+
+# Compare with Tallulah's genes
+
+ta_genes <- read.table("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/intermediate/FourDatasets_Stage_Expression_DB_M3Drop_Genes.txt")
+ta_genes <- rownames(ta_genes)
+
+table(fData(deng_rpkm)$feature_symbol[fData(deng_rpkm)$fsc3_features] %in% ta_genes)
+table(fData(goolam_counts)$feature_symbol[fData(goolam_counts)$fsc3_features] %in% ta_genes)
+table(fData(biase_fpkm)$feature_symbol[fData(biase_fpkm)$fsc3_features] %in% ta_genes)
+table(fData(fan_fpkm)$feature_symbol[fData(fan_fpkm)$fsc3_features] %in% ta_genes)
+
+
+```
 

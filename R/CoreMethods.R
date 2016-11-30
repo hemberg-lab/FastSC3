@@ -258,11 +258,10 @@ setMethod("fsc3_norm_kernel", signature(object = "SCESet"), function(object) {
 #' @return an object of 'SCESet' class
 #' 
 #' @importFrom M3Drop M3DropDifferentialExpression
-#' @importFrom scater get_exprs
 #' @importFrom SC3 get_processed_dataset
 #' 
 #' @export
-fsc3_get_hyperplanes.SCESet <- function(object, n_genes = 1000) {
+fsc3_get_features.SCESet <- function(object, n_genes = 1000) {
     data <- SC3::get_processed_dataset(object)
     if(object@sc3$logged) {
         data <- 2^(data) - 1
@@ -278,34 +277,178 @@ fsc3_get_hyperplanes.SCESet <- function(object, n_genes = 1000) {
     return(object)
 }
 
-#' @rdname fsc3_get_hyperplanes.SCESet
-#' @aliases fsc3_get_hyperplanes
+#' @rdname fsc3_get_features.SCESet
+#' @aliases fsc3_get_features
 #' @importClassesFrom scater SCESet
 #' @export
-setMethod("fsc3_get_hyperplanes", signature(object = "SCESet"), function(object, n_genes = 1000) {
-    fsc3_get_hyperplanes.SCESet(object, n_genes)
+setMethod("fsc3_get_features", signature(object = "SCESet"), function(object, n_genes = 1000) {
+    fsc3_get_features.SCESet(object, n_genes)
 })
+
+#' Define a set of genes used for creating cell binary signatures
+#' 
+#' The important genes (hyperplanes) are defined as differentially expressed 
+#' genes identified using M3Drop (Michaelis-Menten Modelling of Dropouts for scRNASeq,
+#' http://bioconductor.org/packages/M3Drop). A 'data.frame' with the genes
+#' and corresponding p and q values is written to the 'hyperplanes' item of the
+#' 'sc3' slot of the input object.
+#' 
+#' @param object an object of 'SCESet' class
+#' @param n_genes number of the genes to be returned
+#' 
+#' @return an object of 'SCESet' class
+#' 
+#' @importFrom M3Drop M3DropDifferentialExpression
+#' @importFrom scater fData<-
+#' @importFrom SC3 get_processed_dataset
+#' 
+#' @export
+fsc3_get_features.SCESet <- function(object, n_genes = 100, pct_dropout_min = 20, pct_dropout_max = 80, suppress_plot = T) {
+    f_data <- object@featureData@data
+    
+    # do not consider ERCC spike-ins and genes with 0 dropout rate
+    dropouts_filter <- which(f_data$pct_dropout != 0 & !grepl("ERCC-", featureNames(object)))
+    dropouts <- log10(f_data$pct_dropout[dropouts_filter])
+    expression <- f_data$mean_exprs[dropouts_filter]
+
+    fit <- lm(dropouts ~ expression)
+    gene_inds <- as.numeric(
+        names(
+            head(
+                sort(
+                    fit$residuals[
+                        fit$residuals > 0 & 
+                        f_data$pct_dropout[dropouts_filter] > pct_dropout_min & 
+                        f_data$pct_dropout[dropouts_filter] < pct_dropout_max
+                    ],
+                    decreasing = T
+                ),
+                n_genes
+            )
+        )
+    )
+    
+    f_data$fsc3_features <- FALSE
+    f_data$fsc3_features[dropouts_filter[gene_inds]] <- TRUE
+    fData(object) <- new("AnnotatedDataFrame", data = f_data)
+
+    if(!suppress_plot) {
+        plot(expression, dropouts, xlab = "log2(Expression)", ylab = "log10(% of dropouts)")
+        points(expression[gene_inds], dropouts[gene_inds], col = "red")
+        abline(fit, col = "red")
+    }
+    
+    return(object)
+}
+
+#' @rdname fsc3_get_features.SCESet
+#' @aliases fsc3_get_features
+#' @importClassesFrom scater SCESet
+#' @export
+setMethod("fsc3_get_features", signature(object = "SCESet"), function(object, n_genes = 100, pct_dropout_min = 20, pct_dropout_max = 80, suppress_plot = T) {
+    fsc3_get_features.SCESet(object, n_genes, pct_dropout_min, pct_dropout_max, suppress_plot)
+})
+
+#' Title
+#' 
+#' 
+#' @param features a vector of feature names
+#' 
+#' @importFrom scater fData<-
+#' 
+#' @export
+fsc3_set_features.SCESet <- function(object, features) {
+    f_data <- object@featureData@data
+    inds <- match(features, f_data$feature_symbol)
+    
+    if(!all(!is.na(inds))) {
+        message(paste0("Features ", paste(features[which(is.na(inds))], collapse = ", "), " are not present in the 'SCESet' object and therefore were not set."))
+    }
+    
+    f_data$fsc3_features <- FALSE
+    f_data$fsc3_features[inds[!is.na(inds)]] <- TRUE
+    fData(object) <- new("AnnotatedDataFrame", data = f_data)
+    
+    return(object)
+}
+
+#' @rdname fsc3_set_features.SCESet
+#' @aliases fsc3_set_features
+#' @importClassesFrom scater SCESet
+#' @export
+setMethod("fsc3_set_features", signature(object = "SCESet"), function(object, features) {
+    fsc3_set_features.SCESet(object, features)
+})
+
+
+# #' Define a set of genes used for creating cell binary signatures
+# #' 
+# #' The important genes (hyperplanes) are defined as differentially expressed 
+# #' genes identified using M3Drop (Michaelis-Menten Modelling of Dropouts for scRNASeq,
+# #' http://bioconductor.org/packages/M3Drop). A 'data.frame' with the genes
+# #' and corresponding p and q values is written to the 'hyperplanes' item of the
+# #' 'sc3' slot of the input object.
+# #' 
+# #' @param object an object of 'SCESet' class
+# #' @param n_genes number of the genes to be returned
+# #' 
+# #' @return an object of 'SCESet' class
+# #' 
+# #' @importFrom M3Drop M3DropDifferentialExpression
+# #' @importFrom scater get_exprs
+# #' @importFrom SC3 get_processed_dataset
+# #' 
+# #' @export
+# fsc3_get_features.SCESet <- function(object, n_genes = 1000, dropout_min = 20, suppress_plot = T) {
+#     dropouts <- fData(object)$pct_dropout/100
+#     shannon_entropy <- unlist(lapply(dropouts, function(x) {
+#             -x * log2(x) - (1 - x) * log2(1 - x)
+#     }))
+#     gene_inds <- order(shannon_entropy, decreasing = T)[1:n_genes]
+#     object@sc3$hyperplanes <- rownames(fData(object))[gene_inds]
+#     expression <- fData(object)$mean_exprs
+#     if(!suppress_plot) {
+#         plot(expression, shannon_entropy, xlab = "log2(Expression)", ylab = "Shannon entropy")
+#         points(expression[gene_inds], shannon_entropy[gene_inds], col = "red")
+#     }
+#     return(object)
+# }
+# 
+# #' @rdname fsc3_get_features.SCESet
+# #' @aliases fsc3_get_features
+# #' @importClassesFrom scater SCESet
+# #' @export
+# setMethod("fsc3_get_features", signature(object = "SCESet"), function(object, n_genes = 1000, dropout_min = 20, suppress_plot = T) {
+#     fsc3_get_features.SCESet(object, n_genes, dropout_min, suppress_plot)
+# })
+
 
 #' Create a binary signature for each cell
 #' 
 #' 
 #' @param object an object of 'SCESet' class
+#' @param exprs_values
 #' 
 #' @importFrom SC3 get_processed_dataset
+#' @importFrom scater pData pData<-
 #' 
 #' @return an object of 'SCESet' class
 #' 
 #' @export
-fsc3_get_signatures.SCESet <- function(object) {
-    hyperps <- object@sc3$hyperplanes
-    if (is.null(hyperps)) {
-        warning(paste0("Please run fsc3_get_hyperplanes() first!"))
+fsc3_get_signatures.SCESet <- function(object, exprs_values = "exprs") {
+    if (is.null(object@featureData@data$fsc3_features)) {
+        warning(paste0("Please run fsc3_get_features() first!"))
         return(object)
     }
-    data <- SC3::get_processed_dataset(object)
-    data <- data[rownames(data) %in% hyperps, ]
-    object@sc3$signatures <- signature_mapper(data)
-    names(object@sc3$signatures) <- colnames(data)
+    
+    data <- object@assayData[[exprs_values]]
+    data <- data[object@featureData@data$fsc3_features, ]
+    data <- data[order(rownames(data)), ]
+
+    p_data <- pData(object)
+    p_data$fsc3_signatures <- signature_mapper(data)
+    pData(object) <- new("AnnotatedDataFrame", data = p_data)
+    
     return(object)
 }
 
@@ -358,7 +501,7 @@ setMethod("fsc3_get_signatures_fjlt", signature(object = "SCESet"), function(obj
 #' @param common_bits number of common bits which is enough to put two signatures
 #' in the same bucket
 #' 
-#' @importFrom scater pData<-
+#' @importFrom scater pData pData<-
 #' @importFrom methods new
 #' @importFrom mclust adjustedRandIndex
 #' 
@@ -366,7 +509,7 @@ setMethod("fsc3_get_signatures_fjlt", signature(object = "SCESet"), function(obj
 #' 
 #' @export
 fsc3_get_buckets.SCESet <- function(object, common_bits = NULL, runs = 50) {
-    sigs <- object@sc3$signatures
+    sigs <- pData(object)$fsc3_signatures
     if (is.null(sigs)) {
         warning(paste0("Please run fsc3_get_signatures() first!"))
         return(object)
@@ -401,10 +544,9 @@ fsc3_get_buckets.SCESet <- function(object, common_bits = NULL, runs = 50) {
     res <- buckets[ , sample(which(S == max(S, na.rm = TRUE)), 1)]
 
     message(paste0("Number of buckets is ", length(unique(res)), ". On average each bucket contains ", round(length(sigs) / length(unique(res))), " cells."))
-    p_data <- object@phenoData@data
+    p_data <- pData(object)
     p_data$fsc3_buckets <- res
     pData(object) <- new("AnnotatedDataFrame", data = p_data)
-    object@sc3$buckets <- res
     return(object)
 }
 
@@ -424,12 +566,14 @@ setMethod("fsc3_get_buckets", signature(object = "SCESet"), function(object, com
 #' 
 #' @param object an object of 'SCESet' class
 #' 
+#' @importFrom scater pData pData<-
+#' 
 #' @return an object of 'SCESet' class
 #' 
 #' @export
-fsc3_get_buckets_signatures.SCESet <- function(object) {
-    sigs <- object@sc3$signatures
-    buckets <- object@sc3$buckets
+fsc3_get_buckets_signatures.SCESet <- function(object, threshold = 0.9) {
+    sigs <- pData(object)$fsc3_signatures
+    buckets <- pData(object)$fsc3_buckets
     if (is.null(sigs)) {
         warning(paste0("Please run fsc3_get_signatures() and fsc3_get_buckets() first!"))
         return(object)
@@ -441,14 +585,14 @@ fsc3_get_buckets_signatures.SCESet <- function(object) {
     
     bsigs <- NULL
     for(i in unique(buckets)) {
-        tmp <- get_consensus_string(sigs[buckets == i])
+        tmp <- get_consensus_string(sigs[buckets == i], threshold = threshold)
         bsigs <- c(bsigs, tmp)
     }
-    
-    res <- data.frame(bucket = unique(buckets), signature = bsigs, stringsAsFactors = F)
-    res$bucket <- as.numeric(res$bucket)
 
-    object@sc3$buckets_signatures <- res
+    p_data <- pData(object)
+    p_data$fsc3_buckets_signatures <- bsigs[match(buckets, unique(buckets))]
+    pData(object) <- new("AnnotatedDataFrame", data = p_data)
+
     return(object)
 }
 
@@ -456,8 +600,8 @@ fsc3_get_buckets_signatures.SCESet <- function(object) {
 #' @aliases fsc3_get_buckets_signatures
 #' @importClassesFrom scater SCESet
 #' @export
-setMethod("fsc3_get_buckets_signatures", signature(object = "SCESet"), function(object) {
-    fsc3_get_buckets_signatures.SCESet(object)
+setMethod("fsc3_get_buckets_signatures", signature(object = "SCESet"), function(object, threshold = 0.9) {
+    fsc3_get_buckets_signatures.SCESet(object, threshold)
 })
 
 
@@ -534,13 +678,13 @@ fsc3_get_clusters.SCESet <- function(object, k) {
     hc <- object@sc3$consensus[[as.character(k)]]$hc
     bucket_clusts <- SC3:::get_clusts(hc, k)
     
-    names(bucket_clusts) <- object@sc3$svm_train_inds
+    names(bucket_clusts) <- object@sc3$buckets[object@sc3$svm_train_inds]
     buckets <- object@sc3$buckets
     
     res <- rep(0, length(buckets))
     for(i in unique(sort(bucket_clusts))) {
-        to_merge <- buckets[as.numeric(names(bucket_clusts[bucket_clusts == i]))]
-        res[!is.na(match(buckets, to_merge))] <- i
+        to_merge <- as.numeric(names(bucket_clusts[bucket_clusts == i]))
+        res[buckets %in% to_merge] <- i
     }
     
     object@sc3$svm_result <- res
