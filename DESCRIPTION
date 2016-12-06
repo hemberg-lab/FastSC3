@@ -14,7 +14,6 @@ Description: A tool for fast unsupervised clustering and analysis of single cell
 License: GPL-3
 Depends: SC3
 Imports: 
-    M3Drop, 
     Rcpp (>= 0.12.6), 
     scater, 
     methods, 

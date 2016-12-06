@@ -7,9 +7,9 @@
 \alias{fsc3_get_buckets_signatures.SCESet}
 \title{Calculate average bucket signatures}
 \usage{
-fsc3_get_buckets_signatures.SCESet(object)
+fsc3_get_buckets_signatures.SCESet(object, threshold = 0.7)
 
-\S4method{fsc3_get_buckets_signatures}{SCESet}(object)
+\S4method{fsc3_get_buckets_signatures}{SCESet}(object, threshold = 0.7)
 }
 \arguments{
 \item{object}{an object of 'SCESet' class}

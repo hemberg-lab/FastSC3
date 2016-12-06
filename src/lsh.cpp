@@ -33,6 +33,31 @@ std::vector< std::string > signature_mapper(arma::mat X) {
 }
 
 // [[Rcpp::export]]
+std::vector<std::string> sort_lexic(std::vector<std::string> v) {
+    std::sort(v.begin(), v.end());
+    return(v);
+}
+
+// [[Rcpp::export]]
+arma::vec signatures_order(std::vector< std::string > signatures) {
+    int i, j;
+    int k;
+    arma::vec res = zeros<vec>(signatures.size());
+    std::string s;
+    for(i = 0; i < signatures.size(); i++) {
+        s = signatures[i];
+        k = 0;
+        for(j = 0; j < s.length(); j++) {
+            if(s[j] == '1') {
+                k++;
+            }
+        }
+        res(i) = k;
+    }
+    return(res);
+}
+
+// [[Rcpp::export]]
 std::vector< std::string > signature_mapper_fjlt(arma::mat X, arma::vec means) {
     string s;
     vector<string> signatures;

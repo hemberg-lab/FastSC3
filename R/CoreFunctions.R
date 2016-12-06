@@ -73,7 +73,7 @@ ftransformation <- function(dists, method) {
 #' @export
 plot_sankey <- function(reference, clusters, plot_width = 400, plot_height = 600, colors = NULL) {
     res.all <- NULL
-    for(j in unique(reference)){
+    for(j in names(table(reference))){
         res <- NULL
         for(i in names(table(clusters))) {
             tmp <- length(intersect(which(clusters == i), which(reference == j)))
@@ -82,9 +82,9 @@ plot_sankey <- function(reference, clusters, plot_width = 400, plot_height = 600
         res.all <- rbind(res.all, res)
     }
     colnames(res.all) <- names(table(clusters))
-    rownames(res.all) <- unique(reference)
+    rownames(res.all) <- names(table(reference))
     
-    res.all <- res.all[order(rownames(res.all)), 
+    res.all <- res.all[order(as.numeric(table(reference)), decreasing = T), 
                        order(as.numeric(table(clusters)), decreasing = T)]
     
     res <- reshape2::melt(res.all)
@@ -96,6 +96,7 @@ plot_sankey <- function(reference, clusters, plot_width = 400, plot_height = 600
     
     res <- merge(res, maxs)
     maxs <- res[res$value == res$max, ]
+    maxs <- maxs[order(maxs$value, decreasing = T), ]
     res <- res[res$value != res$max, ]
     res <- rbind(maxs, res)
     res <- res[,1:3]
@@ -153,7 +154,7 @@ get_common_fsc3_features <- function(objects) {
             message("Every input object has to contain 'feature_symbol' column in the featureData slot! Please check your input objects!")
             return(NULL)
         }
-        object_features <- f_data$feature_symbol[f_data$fsc3_features]
+        object_features <- as.character(f_data$feature_symbol)[f_data$fsc3_features]
         common_features <- c(common_features, object_features)
     }
     common_features <- unique(common_features)
@@ -166,9 +167,8 @@ get_common_fsc3_features <- function(objects) {
     return(common_features[common_inds])
 }
 
-fsc3_assign_signatures <- function(object_to_assign, object_ref) {
+fsc3_assign_signatures <- function(object_to_assign, object_ref, threshold = 0.7) {
     # reference object
-    object_ref <- fsc3_get_buckets_signatures(object_ref)
     buckets_ref <- unique(pData(object_ref)[, c("fsc3_buckets", "fsc3_buckets_signatures")])
     # convert factors to strings
     if(is.factor(buckets_ref$fsc3_buckets)) {
@@ -179,8 +179,18 @@ fsc3_assign_signatures <- function(object_to_assign, object_ref) {
     
     buckets_assigned <- NULL
     for(sig in sigs_to_assign) {
-        tmp <- nnet::which.is.max(compare_signatures(sig, buckets_ref$fsc3_buckets_signatures))
-        buckets_assigned <- c(buckets_assigned, buckets_ref$fsc3_buckets[tmp])
+        sig <- unlist(strsplit(sig, ""))
+        common_bits <- c()
+        for(sig_ref in buckets_ref$fsc3_buckets_signatures) {
+            tmp <- unlist(strsplit(sig_ref, ""))
+            common_bits <- c(common_bits, length(which(tmp == sig))/length(which(tmp != "_")))
+        }
+        if(max(common_bits) >= threshold) {
+            tmp <- nnet::which.is.max(common_bits)
+            buckets_assigned <- c(buckets_assigned, buckets_ref$fsc3_buckets[tmp])
+        } else {
+            buckets_assigned <- c(buckets_assigned, "unassigned")
+        }
     }
     
     p_data <- object_to_assign@phenoData@data

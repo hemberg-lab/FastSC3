@@ -36,10 +36,22 @@ library(scater)
 library(FastSC3)
 library(pheatmap)
 
-# macosko <- readRDS("~/Dropbox/scRNASeq-public-datasets/macosko.rds")
+# macosko <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/intermediate/macosko.rds")
 # macosko <- macosko[!duplicated(unlist(lapply(strsplit(rownames(macosko), ":"), "[[", 3))), ]
 # rownames(macosko) <- unlist(lapply(strsplit(rownames(macosko), ":"), "[[", 3))
-# cell_info <- data.frame(cell_id = colnames(macosko))
+# cell_info <- data.frame(cell_id = as.numeric(colnames(macosko)))
+# cell_info$cell_type <- "rods"
+# cell_info$cell_type[cell_info$cell_id == 1] <- "horizontal"
+# cell_info$cell_type[cell_info$cell_id == 2] <- "ganglion"
+# cell_info$cell_type[cell_info$cell_id %in% 3:23] <- "amacrine"
+# cell_info$cell_type[cell_info$cell_id == 25] <- "cones"
+# cell_info$cell_type[cell_info$cell_id %in% 26:33] <- "bipolar"
+# cell_info$cell_type[cell_info$cell_id == 34] <- "muller"
+# cell_info$cell_type[cell_info$cell_id == 35] <- "astrocytes"
+# cell_info$cell_type[cell_info$cell_id == 36] <- "fibroblasts"
+# cell_info$cell_type[cell_info$cell_id == 37] <- "vascular_endothelium"
+# cell_info$cell_type[cell_info$cell_id == 38] <- "pericytes"
+# cell_info$cell_type[cell_info$cell_id == 39] <- "microglia"
 # cell_inds <- paste("Cell", 1:ncol(macosko), sep = "_")
 # rownames(cell_info) <- cell_inds
 # cell_exprs <- macosko
@@ -82,9 +94,15 @@ Shekhar
 library(scater)
 library(FastSC3)
 library(pheatmap)
-
-# shekhar <- readRDS("~/Dropbox/scRNASeq-public-datasets/shekhar.rds")
-# cell_info <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/shekhar_ann.rds")
+# 
+# shekhar <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/intermediate/shekhar.rds")
+# cell_info <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/intermediate/shekhar_ann.rds")
+# cell_info$cell_type <- "unknown"
+# cell_info$cell_type[cell_info$louvain_clusts %in% c(1, 3:15)] <- "bipolar"
+# cell_info$cell_type[cell_info$louvain_clusts == 2] <- "muller"
+# cell_info$cell_type[cell_info$louvain_clusts == 16] <- "amacrine"
+# cell_info$cell_type[cell_info$louvain_clusts == 20] <- "rods"
+# cell_info$cell_type[cell_info$louvain_clusts == 22] <- "cones"
 # pd <- new("AnnotatedDataFrame", data = cell_info)
 # sceset <- newSCESet(countData = shekhar, phenoData = pd)
 # sceset <- calculateQCMetrics(sceset)
@@ -96,9 +114,12 @@ gc()
 ptm <- proc.time()
 # prepare for k prediction
 sceset <- sc3_prepare(sceset, ks = 2:26, svm_max = Inf)
-sceset <- fsc3_get_features(sceset, n_genes = 100, suppress_plot = F)
+sceset <- fsc3_get_features(sceset)
 sceset <- fsc3_get_signatures(sceset)
+
 sceset <- fsc3_get_buckets(sceset, common_bits = 61, runs = 10)
+
+
 sceset <- fsc3_get_buckets_signatures(sceset)
 mclust::adjustedRandIndex(sceset@sc3$buckets, as.numeric(pData(sceset)[,1]))
 sceset <- fsc3_select_repr_cells(sceset)
@@ -364,6 +385,65 @@ shekhar <- fsc3_get_features(shekhar)
 macosko <- readRDS("~/Dropbox/scRNASeq-public-datasets/drosophila-retina/macosko_sceset.rds")
 macosko <- fsc3_get_features(macosko)
 
+shekh <- featureNames(shekhar)[fData(shekhar)$fsc3_features]
+mac <- featureNames(macosko)[fData(macosko)$fsc3_features]
+upset(fromList(list(Shekhar = shekh, Macosko = mac)), order.by = "freq", nsets = 2)
+
+# Assignments based on Shekhar
+common_features <- get_common_fsc3_features(list(shekhar))
+macosko <- fsc3_set_features(macosko, common_features)
+# update common_features
+common_features <- featureNames(macosko)[fData(macosko)$fsc3_features]
+shekhar <- fsc3_set_features(shekhar, common_features)
+
+shekhar <- fsc3_get_signatures(shekhar)
+macosko <- fsc3_get_signatures(macosko)
+
+p_data <- pData(shekhar)
+p_data$fsc3_buckets <- p_data$cell_type
+pData(shekhar) <- new("AnnotatedDataFrame", data = p_data)
+shekhar <- fsc3_get_buckets_signatures(shekhar, threshold = 0.6)
+
+macosko <- fsc3_assign_signatures(macosko, shekhar, threshold = 0.6)
+if(is.factor(pData(macosko)$cell_type)) {
+    labs_orig <- levels(pData(macosko)$cell_type)[pData(macosko)$cell_type]
+} else {
+    labs_orig <- pData(macosko)$cell_type
+}
+labs_new <- pData(macosko)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+# Assignments based on Macosko
+macosko <- fsc3_get_features(macosko)
+common_features <- get_common_fsc3_features(list(macosko))
+shekhar <- fsc3_set_features(shekhar, common_features)
+# update common_features
+common_features <- featureNames(shekhar)[fData(shekhar)$fsc3_features]
+macosko <- fsc3_set_features(macosko, common_features)
+
+shekhar <- fsc3_get_signatures(shekhar)
+macosko <- fsc3_get_signatures(macosko)
+
+p_data <- pData(macosko)
+p_data$fsc3_buckets <- p_data$cell_type
+pData(macosko) <- new("AnnotatedDataFrame", data = p_data)
+macosko <- fsc3_get_buckets_signatures(macosko, threshold = 0.6)
+
+shekhar <- fsc3_assign_signatures(shekhar, macosko, threshold = 0.6)
+if(is.factor(pData(shekhar)$cell_type)) {
+    labs_orig <- levels(pData(shekhar)$cell_type)[pData(shekhar)$cell_type]
+} else {
+    labs_orig <- pData(shekhar)$cell_type
+}
+labs_new <- pData(shekhar)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+
+
 common_features <- get_common_fsc3_features(list(shekhar, macosko))
 
 shekhar <- fsc3_set_features(shekhar, common_features)
@@ -375,22 +455,40 @@ macosko <- fsc3_get_signatures(macosko)
 # Assignments based on Shekhar
 
 p_data <- pData(shekhar)
-p_data$fsc3_buckets <- as.numeric(p_data$louvain_clusts)
+p_data$fsc3_buckets <- p_data$cell_type
 pData(shekhar) <- new("AnnotatedDataFrame", data = p_data)
+shekhar <- fsc3_get_buckets_signatures(shekhar, threshold = 0.8)
 
-macosko <- fsc3_assign_signatures(macosko, shekhar)
-plot_sankey(pData(macosko)$cell_id, pData(macosko)$fsc3_buckets_assigned, colors = c("#FF0000","#FFA500","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#57A5D6","#57A5D6","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#800080","#800080","#800080","#800080","#800080","#800080"))
-mclust::adjustedRandIndex(pData(macosko)$cell_id, pData(macosko)$fsc3_buckets_assigned)
+macosko <- fsc3_assign_signatures(macosko, shekhar, threshold = 0.7)
+if(is.factor(pData(macosko)$cell_type)) {
+    labs_orig <- levels(pData(macosko)$cell_type)[pData(macosko)$cell_type]
+} else {
+    labs_orig <- pData(macosko)$cell_type
+}
+labs_new <- pData(macosko)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+# plot_sankey(labs_orig, labs_new, colors = c("#FF0000","#FFA500","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#008000","#57A5D6","#57A5D6","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#0000FF","#800080","#800080","#800080","#800080","#800080","#800080"))
+irr::kappa2(cbind(labs_orig, labs_new))
+mclust::adjustedRandIndex(labs_orig, labs_new)
 
 # Assignments based on Macosko
 
 p_data <- pData(macosko)
-p_data$fsc3_buckets <- as.numeric(p_data$cell_id)
+p_data$fsc3_buckets <- p_data$cell_type
 pData(macosko) <- new("AnnotatedDataFrame", data = p_data)
+macosko <- fsc3_get_buckets_signatures(macosko, threshold = 0.8)
 
-shekhar <- fsc3_assign_signatures(shekhar, macosko)
-plot_sankey(pData(shekhar)$louvain_clusts, pData(shekhar)$fsc3_buckets_assigned, colors = c("#0000FF", "#800080", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#008000", "#000000", "#000000", "#000000", "#57A5D6", "#000000", "#57A5D6", "#000000", "#000000", "#000000", "#000000"))
-mclust::adjustedRandIndex(pData(shekhar)$louvain_clusts, pData(shekhar)$fsc3_buckets_assigned)
+shekhar <- fsc3_assign_signatures(shekhar, macosko, threshold = 0.7)
+if(is.factor(pData(shekhar)$cell_type)) {
+    labs_orig <- levels(pData(shekhar)$cell_type)[pData(shekhar)$cell_type]
+} else {
+    labs_orig <- pData(shekhar)$cell_type
+}
+labs_new <- pData(shekhar)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+# plot_sankey(labs_orig, labs_new, colors = c("#0000FF", "#800080", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#0000FF", "#008000", "#000000", "#000000", "#000000", "#57A5D6", "#000000", "#57A5D6", "#000000", "#000000", "#000000", "#000000"))
+irr::kappa2(cbind(labs_orig, labs_new))
+mclust::adjustedRandIndex(labs_orig, labs_new)
 
 ```
 
@@ -463,25 +561,25 @@ mclust::adjustedRandIndex(pData(shekhar)$louvain_clusts, pData(shekhar)$fsc3_buc
 ## Goolam
 
 ```{r}
-d <- read.table("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/intermediate/Goolam_et_al_2015_count_table.tsv", header = T)
-
-labs <- colnames(d)
-labs[grep("4cell",labs)] = "4cell"
-labs[grep("8cell",labs)] = "8cell"
-labs[grep("16cell",labs)] = "16cell"
-labs[grep("32cell",labs)] = "blast"
-labs[grep("2cell",labs)] = "2cell"
-
-ann <- data.frame(stage = labs)
-rownames(ann) <- colnames(d)
-colnames(d) <- rownames(ann)
-pd <- new("AnnotatedDataFrame", data = ann)
-goolam <- newSCESet(countData = as.matrix(d), phenoData = pd)
-goolam <- calculateQCMetrics(goolam, feature_controls = grep("ERCC-", rownames(d)))
-# convert ensembl ids into gene names
-goolam <- getBMFeatureAnnos(
-    goolam, filters="ensembl_gene_id",
-    biomart="ensembl", dataset="mmusculus_gene_ensembl")
+# d <- read.table("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/intermediate/Goolam_et_al_2015_count_table.tsv", header = T)
+# 
+# labs <- colnames(d)
+# labs[grep("4cell",labs)] = "4cell"
+# labs[grep("8cell",labs)] = "8cell"
+# labs[grep("16cell",labs)] = "16cell"
+# labs[grep("32cell",labs)] = "blast"
+# labs[grep("2cell",labs)] = "2cell"
+# 
+# ann <- data.frame(stage = labs)
+# rownames(ann) <- colnames(d)
+# colnames(d) <- rownames(ann)
+# pd <- new("AnnotatedDataFrame", data = ann)
+# goolam <- newSCESet(countData = as.matrix(d), phenoData = pd)
+# goolam <- calculateQCMetrics(goolam, feature_controls = grep("ERCC-", rownames(d)))
+# # convert ensembl ids into gene names
+# goolam <- getBMFeatureAnnos(
+#     goolam, filters="ensembl_gene_id",
+#     biomart="ensembl", dataset="mmusculus_gene_ensembl")
 # saveRDS(goolam, "~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/goolam_counts.rds")
 ```
 
@@ -517,13 +615,20 @@ goolam <- getBMFeatureAnnos(
 
 ```{r}
 deng_rpkm <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/deng_rpkm_sceset.rds")
-deng_rpkm <- fsc3_get_features(deng_rpkm, n_genes = 1000)
+deng_rpkm <- fsc3_get_features(deng_rpkm)
 biase_fpkm <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/biase_fpkm.rds")
-biase_fpkm <- fsc3_get_features(biase_fpkm, n_genes = 1000)
+biase_fpkm <- fsc3_get_features(biase_fpkm)
 goolam_counts <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/goolam_counts.rds")
-goolam_counts <- fsc3_get_features(goolam_counts, n_genes = 1000)
+goolam_counts <- fsc3_get_features(goolam_counts)
 fan_fpkm <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-embryo-devel/fan_fpkm.rds")
-fan_fpkm <- fsc3_get_features(fan_fpkm, n_genes = 1000)
+fan_fpkm <- fsc3_get_features(fan_fpkm)
+
+
+deng <- featureNames(deng_rpkm)[fData(deng_rpkm)$fsc3_features]
+biase <- featureNames(biase_fpkm)[fData(biase_fpkm)$fsc3_features]
+goolam <- featureNames(goolam_counts)[fData(goolam_counts)$fsc3_features]
+fan <- featureNames(fan_fpkm)[fData(fan_fpkm)$fsc3_features]
+upset(fromList(list(Deng = deng, Biase = biase, Goolam = goolam, Fan = fan)), order.by = "freq", nsets = 4)
 
 common_features <- get_common_fsc3_features(list(deng_rpkm, goolam_counts, biase_fpkm, fan_fpkm))
 
@@ -542,37 +647,41 @@ fan_fpkm <- fsc3_get_signatures(fan_fpkm)
 p_data <- pData(deng_rpkm)
 p_data$fsc3_buckets <- p_data$stage
 pData(deng_rpkm) <- new("AnnotatedDataFrame", data = p_data)
+deng_rpkm <- fsc3_get_buckets_signatures(deng_rpkm, threshold = 0.9)
 
-goolam_counts <- fsc3_assign_signatures(goolam_counts, deng_rpkm)
-plot_sankey(pData(goolam_counts)$stage, pData(goolam_counts)$fsc3_buckets_assigned)
-mclust::adjustedRandIndex(pData(goolam_counts)$stage, pData(goolam_counts)$fsc3_buckets_assigned)
 
-biase_fpkm <- fsc3_assign_signatures(biase_fpkm, deng_rpkm)
-plot_sankey(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
-mclust::adjustedRandIndex(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
+goolam_counts <- fsc3_assign_signatures(goolam_counts, deng_rpkm, threshold = 0.7)
+if(is.factor(pData(goolam_counts)$stage)) {
+    labs_orig <- levels(pData(goolam_counts)$stage)[pData(goolam_counts)$stage]
+} else {
+    labs_orig <- pData(goolam_counts)$stage
+}
+labs_new <- pData(goolam_counts)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+biase_fpkm <- fsc3_assign_signatures(biase_fpkm, deng_rpkm, bucket_threshold = 0.8, assign_threshold = 0.7)
+if(is.factor(pData(biase_fpkm)$stage)) {
+    labs_orig <- levels(pData(biase_fpkm)$stage)[pData(biase_fpkm)$stage]
+} else {
+    labs_orig <- pData(biase_fpkm)$stage
+}
+labs_new <- pData(biase_fpkm)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))
+mclust::adjustedRandIndex(labs_orig, labs_new)
 
 fan_fpkm <- fsc3_assign_signatures(fan_fpkm, deng_rpkm)
-plot_sankey(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
-mclust::adjustedRandIndex(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
-
-# Assignments based on Goolam
-
-p_data <- pData(goolam_counts)
-p_data$fsc3_buckets <- p_data$stage
-pData(goolam_counts) <- new("AnnotatedDataFrame", data = p_data)
-
-biase_fpkm <- fsc3_assign_signatures(biase_fpkm, goolam_counts)
-plot_sankey(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
-mclust::adjustedRandIndex(pData(biase_fpkm)$stage, pData(biase_fpkm)$fsc3_buckets_assigned)
-
-deng_rpkm <- fsc3_assign_signatures(deng_rpkm, goolam_counts)
-plot_sankey(pData(deng_rpkm)$stage, pData(deng_rpkm)$fsc3_buckets_assigned)
-mclust::adjustedRandIndex(pData(deng_rpkm)$stage, pData(deng_rpkm)$fsc3_buckets_assigned)
-
-fan_fpkm <- fsc3_assign_signatures(fan_fpkm, goolam_counts)
-plot_sankey(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
-mclust::adjustedRandIndex(pData(fan_fpkm)$stage, pData(fan_fpkm)$fsc3_buckets_assigned)
-
+if(is.factor(pData(fan_fpkm)$stage)) {
+    labs_orig <- levels(pData(fan_fpkm)$stage)[pData(fan_fpkm)$stage]
+} else {
+    labs_orig <- pData(fan_fpkm)$stage
+}
+labs_new <- pData(fan_fpkm)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))
+mclust::adjustedRandIndex(labs_orig, labs_new)
 
 # Compare expressions
 
@@ -592,5 +701,612 @@ table(fData(biase_fpkm)$feature_symbol[fData(biase_fpkm)$fsc3_features] %in% ta_
 table(fData(fan_fpkm)$feature_symbol[fData(fan_fpkm)$fsc3_features] %in% ta_genes)
 
 
+
+
+deng_rpkm <- fsc3_get_features(deng_rpkm)
+common_features <- get_common_fsc3_features(list(deng_rpkm))
+biase_fpkm <- fsc3_set_features(biase_fpkm, common_features)
+# update common_features
+common_features <- featureNames(biase_fpkm)[fData(biase_fpkm)$fsc3_features]
+deng_rpkm <- fsc3_set_features(deng_rpkm, common_features)
+
+deng_rpkm <- fsc3_get_signatures(deng_rpkm)
+biase_fpkm <- fsc3_get_signatures(biase_fpkm)
+
+p_data <- pData(deng_rpkm)
+p_data$fsc3_buckets <- p_data$stage
+pData(deng_rpkm) <- new("AnnotatedDataFrame", data = p_data)
+deng_rpkm <- fsc3_get_buckets_signatures(deng_rpkm, threshold = 0.6)
+
+biase_fpkm <- fsc3_assign_signatures(biase_fpkm, deng_rpkm, threshold = 0.6)
+if(is.factor(pData(biase_fpkm)$stage)) {
+    labs_orig <- levels(pData(biase_fpkm)$stage)[pData(biase_fpkm)$stage]
+} else {
+    labs_orig <- pData(biase_fpkm)$stage
+}
+labs_new <- pData(biase_fpkm)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+
+deng_rpkm <- fsc3_get_features(deng_rpkm)
+common_features <- get_common_fsc3_features(list(deng_rpkm))
+fan_fpkm <- fsc3_set_features(fan_fpkm, common_features)
+# update common_features
+common_features <- featureNames(fan_fpkm)[fData(fan_fpkm)$fsc3_features]
+deng_rpkm <- fsc3_set_features(deng_rpkm, common_features)
+
+deng_rpkm <- fsc3_get_signatures(deng_rpkm)
+fan_fpkm <- fsc3_get_signatures(fan_fpkm)
+
+p_data <- pData(deng_rpkm)
+p_data$fsc3_buckets <- p_data$stage
+pData(deng_rpkm) <- new("AnnotatedDataFrame", data = p_data)
+deng_rpkm <- fsc3_get_buckets_signatures(deng_rpkm, threshold = 0.6)
+
+fan_fpkm <- fsc3_assign_signatures(fan_fpkm, deng_rpkm, threshold = 0.6)
+if(is.factor(pData(fan_fpkm)$stage)) {
+    labs_orig <- levels(pData(fan_fpkm)$stage)[pData(fan_fpkm)$stage]
+} else {
+    labs_orig <- pData(fan_fpkm)$stage
+}
+labs_new <- pData(fan_fpkm)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+
+
+
+deng_rpkm <- fsc3_get_features(deng_rpkm)
+common_features <- get_common_fsc3_features(list(deng_rpkm))
+goolam_counts <- fsc3_set_features(goolam_counts, common_features)
+# update common_features
+common_features <- fData(goolam_counts)$feature_symbol[fData(goolam_counts)$fsc3_features]
+deng_rpkm <- fsc3_set_features(deng_rpkm, common_features)
+
+deng_rpkm <- fsc3_get_signatures(deng_rpkm)
+goolam_counts <- fsc3_get_signatures(goolam_counts)
+
+p_data <- pData(deng_rpkm)
+p_data$fsc3_buckets <- p_data$stage
+pData(deng_rpkm) <- new("AnnotatedDataFrame", data = p_data)
+deng_rpkm <- fsc3_get_buckets_signatures(deng_rpkm, threshold = 0.6)
+
+goolam_counts <- fsc3_assign_signatures(goolam_counts, deng_rpkm, threshold = 0.6)
+if(is.factor(pData(goolam_counts)$stage)) {
+    labs_orig <- levels(pData(goolam_counts)$stage)[pData(goolam_counts)$stage]
+} else {
+    labs_orig <- pData(goolam_counts)$stage
+}
+labs_new <- pData(goolam_counts)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+
 ```
+
+
+# Hematopoietic cells
+
+## Nestorowa
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/Nestorowa.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+nestorowa <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(nestorowa) <- exprs(nestorowa) > 0
+nestorowa <- calculateQCMetrics(nestorowa)
+# use gene names as feature symbols
+nestorowa@featureData@data$feature_symbol <- featureNames(nestorowa)
+saveRDS(nestorowa, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/nestorowa.rds")
+```
+
+## Olsson
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/Olsson.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+olsson <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(olsson) <- exprs(olsson) > 0
+olsson <- calculateQCMetrics(olsson)
+# use gene names as feature symbols
+olsson@featureData@data$feature_symbol <- featureNames(olsson)
+saveRDS(olsson, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/olsson.rds")
+```
+
+## Kowalczyk
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/GSE59114_C57BL6.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+kowalczyk <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(kowalczyk) <- exprs(kowalczyk) > 0
+kowalczyk <- calculateQCMetrics(kowalczyk)
+# use gene names as feature symbols
+kowalczyk@featureData@data$feature_symbol <- featureNames(kowalczyk)
+saveRDS(kowalczyk, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/kowalczyk_bl6.rds")
+```
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/GSE59114_DBA.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+kowalczyk <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(kowalczyk) <- exprs(kowalczyk) > 0
+kowalczyk <- calculateQCMetrics(kowalczyk)
+# use gene names as feature symbols
+kowalczyk@featureData@data$feature_symbol <- featureNames(kowalczyk)
+saveRDS(kowalczyk, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/kowalczyk_dba.rds")
+```
+
+# Grover
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/Grover.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+grover <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(grover) <- exprs(grover) > 0
+grover <- calculateQCMetrics(grover)
+# use gene names as feature symbols
+grover@featureData@data$feature_symbol <- featureNames(grover)
+saveRDS(grover, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/grover.rds")
+```
+
+# Grover
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/Drissen.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+drissen <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(drissen) <- exprs(drissen) > 0
+drissen <- calculateQCMetrics(drissen)
+# use gene names as feature symbols
+drissen@featureData@data$feature_symbol <- featureNames(drissen)
+saveRDS(drissen, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/drissen.rds")
+```
+
+# Zhou
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/GSE67120.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+zhou <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(zhou) <- exprs(zhou) > 0
+zhou <- calculateQCMetrics(zhou)
+# use gene names as feature symbols
+zhou@featureData@data$feature_symbol <- featureNames(zhou)
+saveRDS(zhou, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/zhou.rds")
+```
+
+# Schlitzer
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/GSE60781.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+sceset <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(sceset) <- exprs(sceset) > 0
+sceset <- calculateQCMetrics(sceset)
+# use gene names as feature symbols
+sceset@featureData@data$feature_symbol <- featureNames(sceset)
+saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/schlitzer.rds")
+```
+
+# Wilson
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/GSE61533.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+sceset <- newSCESet(countData = as.matrix(dataset), phenoData = pd)
+sceset <- calculateQCMetrics(sceset)
+# use gene names as feature symbols
+sceset@featureData@data$feature_symbol <- featureNames(sceset)
+saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/wilson.rds")
+```
+
+# Pereira
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/GSE54574.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+sceset <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(sceset) <- exprs(sceset) > 0
+sceset <- calculateQCMetrics(sceset)
+# use gene names as feature symbols
+sceset@featureData@data$feature_symbol <- featureNames(sceset)
+saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/pereira.rds")
+```
+
+# Grun
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/E-GEOD-76983.rds")
+dataset <- d[[1]]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+sceset <- newSCESet(fpkmData = as.matrix(dataset), phenoData = pd)
+is_exprs(sceset) <- exprs(sceset) > 0
+sceset <- calculateQCMetrics(sceset)
+# use gene names as feature symbols
+sceset@featureData@data$feature_symbol <- featureNames(sceset)
+saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/grun.rds")
+```
+
+# Paul
+
+```{r}
+d <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/intermediate/E-GEOD-72857.rds")
+dataset <- d[[1]]
+dataset <- dataset[!duplicated(rownames(dataset)), ]
+ann <- d[[2]]
+rownames(ann) <- colnames(dataset)
+pd <- new("AnnotatedDataFrame", data = ann)
+sceset <- newSCESet(countData = as.matrix(dataset), phenoData = pd)
+sceset <- calculateQCMetrics(sceset)
+# use gene names as feature symbols
+sceset@featureData@data$feature_symbol <- featureNames(sceset)
+saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/paul.rds")
+```
+
+```{r}
+nestorowa <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/nestorowa.rds")
+nestorowa <- fsc3_get_features(nestorowa)
+olsson <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/olsson.rds")
+olsson <- fsc3_get_features(olsson)
+kowalczyk_bl6 <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/kowalczyk_bl6.rds")
+kowalczyk_bl6 <- fsc3_get_features(kowalczyk_bl6)
+kowalczyk_dba <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/kowalczyk_dba.rds")
+kowalczyk_dba <- fsc3_get_features(kowalczyk_dba)
+grover <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/grover.rds")
+grover <- fsc3_get_features(grover)
+drissen <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/drissen.rds")
+drissen <- fsc3_get_features(drissen)
+zhou <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/zhou.rds")
+zhou <- fsc3_get_features(zhou)
+schlitzer <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/schlitzer.rds")
+schlitzer <- fsc3_get_features(schlitzer)
+wilson <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/wilson.rds")
+wilson <- fsc3_get_features(wilson)
+pereira <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/pereira.rds")
+pereira <- fsc3_get_features(pereira)
+grun <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/grun.rds")
+grun <- fsc3_get_features(grun)
+paul <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-bone-marrow/paul.rds")
+paul <- fsc3_get_features(paul)
+
+nest <- featureNames(nestorowa)[fData(nestorowa)$fsc3_features]
+ols <- featureNames(olsson)[fData(olsson)$fsc3_features]
+kowbl6 <- featureNames(kowalczyk_bl6)[fData(kowalczyk_bl6)$fsc3_features]
+kowdba <- featureNames(kowalczyk_dba)[fData(kowalczyk_dba)$fsc3_features]
+grov <- featureNames(grover)[fData(grover)$fsc3_features]
+dris <- featureNames(drissen)[fData(drissen)$fsc3_features]
+zho <- featureNames(zhou)[fData(zhou)$fsc3_features]
+schlitz <- featureNames(schlitzer)[fData(schlitzer)$fsc3_features]
+wils <- featureNames(wilson)[fData(wilson)$fsc3_features]
+per <- featureNames(pereira)[fData(pereira)$fsc3_features]
+gru <- featureNames(grun)[fData(grun)$fsc3_features]
+pau <- featureNames(paul)[fData(paul)$fsc3_features]
+upset(fromList(list(Nestorowa = nest, Olsson = ols, Kowalczyk_BL6 = kowbl6, Kowalczyk_DBA = kowdba, Grover = grov, Drissen = dris, Zhou = zho, Schlitzer = schlitz, Wilson = wils, Pereira = per, Grun = gru, Paul = pau)), order.by = "freq", nsets = 12)
+
+
+
+
+nestorowa <- fsc3_get_features(nestorowa)
+common_features <- get_common_fsc3_features(list(nestorowa))
+olsson <- fsc3_set_features(olsson, common_features)
+# update common_features
+common_features <- featureNames(olsson)[fData(olsson)$fsc3_features]
+nestorowa <- fsc3_set_features(nestorowa, common_features)
+
+nestorowa <- fsc3_get_signatures(nestorowa)
+olsson <- fsc3_get_signatures(olsson)
+
+p_data <- pData(nestorowa)
+p_data$fsc3_buckets <- p_data$Type
+pData(nestorowa) <- new("AnnotatedDataFrame", data = p_data)
+nestorowa <- fsc3_get_buckets_signatures(nestorowa, threshold = 0.6)
+
+olsson <- fsc3_assign_signatures(olsson, nestorowa, threshold = 0.6)
+if(is.factor(pData(olsson)$Type)) {
+    labs_orig <- levels(pData(olsson)$Type)[pData(olsson)$Type]
+} else {
+    labs_orig <- pData(olsson)$Type
+}
+labs_new <- pData(olsson)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+
+nestorowa <- fsc3_get_features(nestorowa)
+common_features <- get_common_fsc3_features(list(nestorowa))
+paul <- fsc3_set_features(paul, common_features)
+# update common_features
+common_features <- featureNames(paul)[fData(paul)$fsc3_features]
+nestorowa <- fsc3_set_features(nestorowa, common_features)
+
+nestorowa <- fsc3_get_signatures(nestorowa)
+paul <- fsc3_get_signatures(paul)
+
+p_data <- pData(nestorowa)
+p_data$fsc3_buckets <- p_data$Type
+pData(nestorowa) <- new("AnnotatedDataFrame", data = p_data)
+nestorowa <- fsc3_get_buckets_signatures(nestorowa, threshold = 0.6)
+
+paul <- fsc3_assign_signatures(paul, nestorowa, threshold = 0.6)
+if(is.factor(pData(paul)$Type)) {
+    labs_orig <- levels(pData(paul)$Type)[pData(paul)$Type]
+} else {
+    labs_orig <- pData(paul)$Type
+}
+labs_new <- pData(paul)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+
+
+kowalczyk_bl6 <- fsc3_get_features(kowalczyk_bl6)
+common_features <- get_common_fsc3_features(list(kowalczyk_bl6))
+kowalczyk_dba <- fsc3_set_features(kowalczyk_dba, common_features)
+# update common_features
+common_features <- featureNames(kowalczyk_dba)[fData(kowalczyk_dba)$fsc3_features]
+kowalczyk_bl6 <- fsc3_set_features(kowalczyk_bl6, common_features)
+
+kowalczyk_bl6 <- fsc3_get_signatures(kowalczyk_bl6)
+kowalczyk_dba <- fsc3_get_signatures(kowalczyk_dba)
+
+p_data <- pData(kowalczyk_bl6)
+p_data$fsc3_buckets <- p_data$Type
+pData(kowalczyk_bl6) <- new("AnnotatedDataFrame", data = p_data)
+kowalczyk_bl6 <- fsc3_get_buckets_signatures(kowalczyk_bl6, threshold = 0.6)
+
+kowalczyk_dba <- fsc3_assign_signatures(kowalczyk_dba, kowalczyk_bl6, threshold = 0.6)
+if(is.factor(pData(kowalczyk_dba)$Type)) {
+    labs_orig <- levels(pData(kowalczyk_dba)$Type)[pData(kowalczyk_dba)$Type]
+} else {
+    labs_orig <- pData(kowalczyk_dba)$Type
+}
+labs_new <- pData(kowalczyk_dba)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+
+
+kowalczyk_dba <- fsc3_get_features(kowalczyk_dba)
+common_features <- get_common_fsc3_features(list(kowalczyk_dba))
+kowalczyk_bl6 <- fsc3_set_features(kowalczyk_bl6, common_features)
+# update common_features
+common_features <- featureNames(kowalczyk_bl6)[fData(kowalczyk_bl6)$fsc3_features]
+kowalczyk_dba <- fsc3_set_features(kowalczyk_dba, common_features)
+
+kowalczyk_dba <- fsc3_get_signatures(kowalczyk_dba)
+kowalczyk_bl6 <- fsc3_get_signatures(kowalczyk_bl6)
+
+p_data <- pData(kowalczyk_dba)
+p_data$fsc3_buckets <- p_data$Type
+pData(kowalczyk_dba) <- new("AnnotatedDataFrame", data = p_data)
+kowalczyk_dba <- fsc3_get_buckets_signatures(kowalczyk_dba, threshold = 0.6)
+
+kowalczyk_bl6 <- fsc3_assign_signatures(kowalczyk_bl6, kowalczyk_dba, threshold = 0.6)
+if(is.factor(pData(kowalczyk_bl6)$Type)) {
+    labs_orig <- levels(pData(kowalczyk_bl6)$Type)[pData(kowalczyk_bl6)$Type]
+} else {
+    labs_orig <- pData(kowalczyk_bl6)$Type
+}
+labs_new <- pData(kowalczyk_bl6)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+
+```
+
+
+# Mouse brain
+
+## Tasic
+
+```{r}
+# # download data from http://casestudies.brain-map.org/celltax
+# # and run this code
+# d <- read.csv("~/Downloads/data_download/genes_rpkm.csv")
+# rownames(d) <- d[,1]
+# d <- d[,2:ncol(d)]
+# # then do this:
+# ann_col <- read.csv("~/Downloads/data_download/cell_metadata.csv")
+# 
+# cell_classification <- read.csv("~/Downloads/data_download/cell_classification.csv")
+# cluster_metadata <- read.csv("~/Downloads/data_download/cluster_metadata.csv")
+# cluster_metadata <- cluster_metadata[,1:(ncol(cluster_metadata) - 1)]
+# 
+# ann_col <- cbind(ann_col, cell_classification[,2:3])
+# colnames(ann_col)[length(ann_col)] <- "cluster_id"
+# 
+# ann_col <- merge(ann_col, cluster_metadata, by = "cluster_id")
+# ann_col <- ann_col[order(ann_col$long_name), ]
+# rownames(ann_col) <- ann_col$long_name
+# ann_col <- ann_col[,c(1, 3:ncol(ann_col))]
+# 
+# pd <- new("AnnotatedDataFrame", data = ann_col)
+# sceset <- newSCESet(fpkmData = as.matrix(d), phenoData = pd)
+# is_exprs(sceset) <- exprs(sceset) > 0
+# sceset <- calculateQCMetrics(sceset)
+# # use gene names as feature symbols
+# sceset@featureData@data$feature_symbol <- featureNames(sceset)
+# saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-brain/tasic.rds")
+```
+
+## 10x-genomics
+
+```{r}
+# # download data from http://support.10xgenomics.com/single-cell/datasets/neuron_9k
+# # and run this code
+# d <- as.matrix(Seurat::Read10X("~/Downloads/filtered_gene_bc_matrices/mm10"))
+# sceset <- newSCESet(countData = d)
+# sceset <- calculateQCMetrics(sceset)
+# # use gene names as feature symbols
+# sceset@featureData@data$feature_symbol <- featureNames(sceset)
+# saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-brain/10x-genomics/neuron_9k.rds")
+```
+
+## VIS
+
+```{r}
+# # download Primary Visual Cortex (VISp) from here: http://celltypes.brain-map.org/rnaseq
+# # and run this code
+# d <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/VIS_gene_expression_matrix_2016-10-27/fpkm_table.csv")
+# rownames(d) <- d[,1]
+# d <- d[,2:ncol(d)]
+# colnames(d) <- as.numeric(sapply(colnames(d), function(x)substring(x, 2)))
+# # then do this:
+# ann_col <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/VIS_gene_expression_matrix_2016-10-27/columns-samples.csv")
+# rownames(ann_col) <- ann_col$rnaseq_profile_id
+# ann_col <- ann_col[,2:ncol(ann_col)]
+# 
+# ann_row <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/VIS_gene_expression_matrix_2016-10-27/rows-genes.csv")
+# rownames(ann_row) <- ann_row$gene_id
+# ann_row <- ann_row[,2:ncol(ann_row)]
+# 
+# pd <- new("AnnotatedDataFrame", data = ann_col)
+# fd <- new("AnnotatedDataFrame", data = ann_row)
+# sceset <- newSCESet(fpkmData = as.matrix(d), phenoData = pd, featureData = fd)
+# is_exprs(sceset) <- exprs(sceset) > 0
+# sceset <- calculateQCMetrics(sceset)
+# # use gene names as feature symbols
+# sceset@featureData@data$feature_symbol <- sceset@featureData@data$gene_symbol
+# saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-brain/allen-atlas-vis.rds")
+```
+
+## ALM
+
+```{r}
+# # download anterior lateral motor cortical area (ALM) from here: http://celltypes.brain-map.org/rnaseq
+# # and run this code
+# d <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/ALM_gene_expression_matrix_2016-10-27/fpkm_table.csv")
+# rownames(d) <- d[,1]
+# d <- d[,2:ncol(d)]
+# colnames(d) <- as.numeric(sapply(colnames(d), function(x)substring(x, 2)))
+# # then do this:
+# ann_col <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/ALM_gene_expression_matrix_2016-10-27/columns-cells.csv")
+# rownames(ann_col) <- ann_col$rnaseq_profile_id
+# ann_col <- ann_col[,2:ncol(ann_col)]
+# 
+# ann_row <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/ALM_gene_expression_matrix_2016-10-27/rows-genes.csv")
+# rownames(ann_row) <- ann_row$gene_id
+# ann_row <- ann_row[,2:ncol(ann_row)]
+# 
+# pd <- new("AnnotatedDataFrame", data = ann_col)
+# fd <- new("AnnotatedDataFrame", data = ann_row)
+# sceset <- newSCESet(fpkmData = as.matrix(d), phenoData = pd, featureData = fd)
+# is_exprs(sceset) <- exprs(sceset) > 0
+# sceset <- calculateQCMetrics(sceset)
+# # use gene names as feature symbols
+# sceset@featureData@data$feature_symbol <- sceset@featureData@data$gene_symbol
+# saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-brain/allen-atlas-alm.rds")
+```
+
+## dLGN
+
+```{r}
+# # download dorsal lateral geniculate nucleus (dLGN) of the thalamus from here: http://celltypes.brain-map.org/rnaseq
+# # and run this code
+# d <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/gene_expression_matrix_2016-03-03/fpkm_table.csv")
+# rownames(d) <- d[,1]
+# d <- d[,2:ncol(d)]
+# colnames(d) <- as.numeric(sapply(colnames(d), function(x)substring(x, 2)))
+# # then do this:
+# ann_col <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/gene_expression_matrix_2016-03-03/columns-cells.csv")
+# rownames(ann_col) <- ann_col$rnaseq_profile_id
+# ann_col <- ann_col[,2:ncol(ann_col)]
+# 
+# ann_row <- read.csv("~/Dropbox/scRNASeq-public-datasets/mouse-brain/intermediate/gene_expression_matrix_2016-03-03/rows-genes.csv")
+# rownames(ann_row) <- ann_row$gene_id
+# ann_row <- ann_row[,2:ncol(ann_row)]
+# 
+# pd <- new("AnnotatedDataFrame", data = ann_col)
+# fd <- new("AnnotatedDataFrame", data = ann_row)
+# sceset <- newSCESet(fpkmData = as.matrix(d), phenoData = pd, featureData = fd)
+# is_exprs(sceset) <- exprs(sceset) > 0
+# sceset <- calculateQCMetrics(sceset)
+# # use gene names as feature symbols
+# sceset@featureData@data$feature_symbol <- sceset@featureData@data$gene_symbol
+# saveRDS(sceset, "~/Dropbox/scRNASeq-public-datasets/mouse-brain/allen-atlas-dlgn.rds")
+```
+
+```{r}
+vis <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-brain/allen-atlas-vis.rds")
+vis <- fsc3_get_features(vis)
+alm <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-brain/allen-atlas-alm.rds")
+alm <- fsc3_get_features(alm)
+dlgn <- readRDS("~/Dropbox/scRNASeq-public-datasets/mouse-brain/allen-atlas-dlgn.rds")
+dlgn <- fsc3_get_features(dlgn)
+
+vi <- as.character(fData(vis)$feature_symbol[fData(vis)$fsc3_features])
+al <- as.character(fData(alm)$feature_symbol[fData(alm)$fsc3_features])
+dlg <- as.character(fData(dlgn)$feature_symbol[fData(dlgn)$fsc3_features])
+upset(fromList(list(VIS = vi, ALM = al, dLGN = dlg)), order.by = "freq", nsets = 3)
+
+
+
+
+vis <- fsc3_get_features(vis)
+common_features <- get_common_fsc3_features(list(vis))
+alm <- fsc3_set_features(alm, common_features)
+# update common_features
+common_features <- as.character(fData(alm)$feature_symbol)[fData(alm)$fsc3_features]
+vis <- fsc3_set_features(vis, common_features)
+
+vis <- fsc3_get_signatures(vis)
+alm <- fsc3_get_signatures(alm)
+
+p_data <- pData(vis)
+p_data$fsc3_buckets <- p_data$genotype_driver
+pData(vis) <- new("AnnotatedDataFrame", data = p_data)
+vis <- fsc3_get_buckets_signatures(vis, threshold = 0.6)
+
+alm <- fsc3_assign_signatures(alm, vis, threshold = 0.6)
+if(is.factor(pData(alm)$genotype_driver)) {
+    labs_orig <- levels(pData(alm)$genotype_driver)[pData(alm)$genotype_driver]
+} else {
+    labs_orig <- pData(alm)$genotype_driver
+}
+labs_new <- pData(alm)$fsc3_buckets_assigned
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+mclust::adjustedRandIndex(labs_orig, labs_new)
+```
+
 

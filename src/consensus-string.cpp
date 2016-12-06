@@ -4,7 +4,7 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-std::string get_consensus_string(std::vector< std::string > signatures) {
+std::string get_consensus_string(std::vector< std::string > signatures, double threshold) {
     int i, j;
     
     std::string res = "";
@@ -19,10 +19,12 @@ std::string get_consensus_string(std::vector< std::string > signatures) {
                 ones++;
             }
         }
-        if(ones >= zeros) {
+        if(ones > threshold * (zeros + ones)) {
             res += "1";
-        } else {
+        } else if(zeros > threshold * (zeros + ones)) {
             res += "0";
+        } else {
+            res += "_";
         }
         zeros = 0;
         ones = 0;

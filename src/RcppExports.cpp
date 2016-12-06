@@ -7,13 +7,14 @@
 using namespace Rcpp;
 
 // get_consensus_string
-std::string get_consensus_string(std::vector< std::string > signatures);
-RcppExport SEXP FastSC3_get_consensus_string(SEXP signaturesSEXP) {
+std::string get_consensus_string(std::vector< std::string > signatures, double threshold);
+RcppExport SEXP FastSC3_get_consensus_string(SEXP signaturesSEXP, SEXP thresholdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< std::vector< std::string > >::type signatures(signaturesSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_consensus_string(signatures));
+    Rcpp::traits::input_parameter< double >::type threshold(thresholdSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_consensus_string(signatures, threshold));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -122,6 +123,28 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     rcpp_result_gen = Rcpp::wrap(signature_mapper(X));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sort_lexic
+std::vector<std::string> sort_lexic(std::vector<std::string> v);
+RcppExport SEXP FastSC3_sort_lexic(SEXP vSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type v(vSEXP);
+    rcpp_result_gen = Rcpp::wrap(sort_lexic(v));
+    return rcpp_result_gen;
+END_RCPP
+}
+// signatures_order
+arma::vec signatures_order(std::vector< std::string > signatures);
+RcppExport SEXP FastSC3_signatures_order(SEXP signaturesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector< std::string > >::type signatures(signaturesSEXP);
+    rcpp_result_gen = Rcpp::wrap(signatures_order(signatures));
     return rcpp_result_gen;
 END_RCPP
 }

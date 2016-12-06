@@ -258,47 +258,6 @@ setMethod("fsc3_norm_kernel", signature(object = "SCESet"), function(object) {
 #' @return an object of 'SCESet' class
 #' 
 #' @importFrom M3Drop M3DropDifferentialExpression
-#' @importFrom SC3 get_processed_dataset
-#' 
-#' @export
-fsc3_get_features.SCESet <- function(object, n_genes = 1000) {
-    data <- SC3::get_processed_dataset(object)
-    if(object@sc3$logged) {
-        data <- 2^(data) - 1
-    }
-    if (is.null(data)) {
-        warning(paste0("Please run sc3_prepare() first!"))
-        return(object)
-    }
-    tmp <- M3Drop::M3DropDifferentialExpression(data, "fdr", 2, suppress.plot = T)
-    tmp <- tmp[!is.na(tmp$p.value) & !is.na(tmp$q.value), ]
-    tmp <- tmp[order(tmp$q.value), ]
-    object@sc3$hyperplanes <- as.character(tmp[1:n_genes, ]$Gene)
-    return(object)
-}
-
-#' @rdname fsc3_get_features.SCESet
-#' @aliases fsc3_get_features
-#' @importClassesFrom scater SCESet
-#' @export
-setMethod("fsc3_get_features", signature(object = "SCESet"), function(object, n_genes = 1000) {
-    fsc3_get_features.SCESet(object, n_genes)
-})
-
-#' Define a set of genes used for creating cell binary signatures
-#' 
-#' The important genes (hyperplanes) are defined as differentially expressed 
-#' genes identified using M3Drop (Michaelis-Menten Modelling of Dropouts for scRNASeq,
-#' http://bioconductor.org/packages/M3Drop). A 'data.frame' with the genes
-#' and corresponding p and q values is written to the 'hyperplanes' item of the
-#' 'sc3' slot of the input object.
-#' 
-#' @param object an object of 'SCESet' class
-#' @param n_genes number of the genes to be returned
-#' 
-#' @return an object of 'SCESet' class
-#' 
-#' @importFrom M3Drop M3DropDifferentialExpression
 #' @importFrom scater fData<-
 #' @importFrom SC3 get_processed_dataset
 #' 
@@ -571,7 +530,7 @@ setMethod("fsc3_get_buckets", signature(object = "SCESet"), function(object, com
 #' @return an object of 'SCESet' class
 #' 
 #' @export
-fsc3_get_buckets_signatures.SCESet <- function(object, threshold = 0.9) {
+fsc3_get_buckets_signatures.SCESet <- function(object, threshold = 0.7) {
     sigs <- pData(object)$fsc3_signatures
     buckets <- pData(object)$fsc3_buckets
     if (is.null(sigs)) {
@@ -584,13 +543,17 @@ fsc3_get_buckets_signatures.SCESet <- function(object, threshold = 0.9) {
     }
     
     bsigs <- NULL
+    strengths <- NULL
     for(i in unique(buckets)) {
         tmp <- get_consensus_string(sigs[buckets == i], threshold = threshold)
         bsigs <- c(bsigs, tmp)
+        strength <- length(which(unlist(strsplit(tmp, "")) != "_"))/nchar(tmp)
+        strengths <- c(strengths, strength)
     }
 
     p_data <- pData(object)
     p_data$fsc3_buckets_signatures <- bsigs[match(buckets, unique(buckets))]
+    p_data$fsc3_buckets_strength <- strengths[match(buckets, unique(buckets))]
     pData(object) <- new("AnnotatedDataFrame", data = p_data)
 
     return(object)
@@ -600,7 +563,7 @@ fsc3_get_buckets_signatures.SCESet <- function(object, threshold = 0.9) {
 #' @aliases fsc3_get_buckets_signatures
 #' @importClassesFrom scater SCESet
 #' @export
-setMethod("fsc3_get_buckets_signatures", signature(object = "SCESet"), function(object, threshold = 0.9) {
+setMethod("fsc3_get_buckets_signatures", signature(object = "SCESet"), function(object, threshold = 0.7) {
     fsc3_get_buckets_signatures.SCESet(object, threshold)
 })
 
