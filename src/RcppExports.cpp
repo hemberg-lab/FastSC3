@@ -196,3 +196,14 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// t_cpp
+arma::mat t_cpp(arma::mat X);
+RcppExport SEXP FastSC3_t_cpp(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(t_cpp(X));
+    return rcpp_result_gen;
+END_RCPP
+}

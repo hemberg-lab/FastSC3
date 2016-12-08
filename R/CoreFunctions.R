@@ -51,100 +51,6 @@ ftransformation <- function(dists, method) {
     }
 }
 
-#' Plot Sankey diagram comparing two clusterings
-#' 
-#' Sometimes it is useful to see how the clusters in two different clustering
-#' solutions correspond to each other. Sankey diagram is a good way to visualize
-#' them. This function takes as input two clustering solutions and visualizes them
-#' using a Sankey diagram. The order of the reference clusters is defined by their
-#' labels in increasing order.
-#' 
-#' @param reference reference clustering labels
-#' @param clusters clustering labels under investigations
-#' @param plot_width width of the output plot in pixels
-#' @param colors colors of the links between two clusterings. If defined please
-#' note that each cluster in the reference clustering has to have its own color.
-#' This should be a normal text vector, e.g. c("#FF0000", "#FFA500", "#008000")
-#' 
-#' @importFrom dplyr %>% summarise group_by
-#' @importFrom reshape2 melt
-#' @importFrom googleVis gvisSankey
-#' 
-#' @export
-plot_sankey <- function(reference, clusters, plot_width = 400, plot_height = 600, colors = NULL) {
-    res.all <- NULL
-    for(j in names(table(reference))){
-        res <- NULL
-        for(i in names(table(clusters))) {
-            tmp <- length(intersect(which(clusters == i), which(reference == j)))
-            res <- c(res, tmp)
-        }
-        res.all <- rbind(res.all, res)
-    }
-    colnames(res.all) <- names(table(clusters))
-    rownames(res.all) <- names(table(reference))
-    
-    res.all <- res.all[order(as.numeric(table(reference)), decreasing = T), 
-                       order(as.numeric(table(clusters)), decreasing = T)]
-    
-    res <- reshape2::melt(res.all)
-    res <- res[res$value != 0, ]
-    
-    maxs <- res %>%
-        dplyr::group_by(Var1) %>%
-        dplyr::summarise(max = max(value))
-    
-    res <- merge(res, maxs)
-    maxs <- res[res$value == res$max, ]
-    maxs <- maxs[order(maxs$value, decreasing = T), ]
-    res <- res[res$value != res$max, ]
-    res <- rbind(maxs, res)
-    res <- res[,1:3]
-    
-    # remove cycles from the data
-    res[, 1] <- paste0(res[, 1], " ")
-    res[, 2] <- paste0(" ", res[, 2])
-    
-    colnames(res) <- c("From", "To", "Weight")
-    
-    if(!is.null(colors)) {
-        colors <- paste(colors, collapse = "', '")
-        colors <- paste0("['", colors, "']")
-    }
-
-    Sankey <- gvisSankey(
-        res,
-        from="From",
-        to="To",
-        weight="Weight",
-        options = list(
-            width = plot_width,
-            height = plot_height,
-            sankey = paste0("{
-                node:{
-                    label:{
-                        fontName:'Arial',
-                        fontSize:11,color:
-                        '#000000',
-                        bold:true,
-                        italic:false
-                    },
-                    colors:'#FFFFFF',
-                    nodePadding:12
-                },", if(!is.null(colors)) {
-                paste0("link:{
-                    colorMode: 'source',
-                    colors: ", colors, "
-                },")},
-                "iterations:0
-            }"
-        ))
-    )
-    
-    plot(Sankey)
-}
-
-
 
 get_common_fsc3_features <- function(objects) {
     common_features <- NULL
@@ -167,15 +73,16 @@ get_common_fsc3_features <- function(objects) {
     return(common_features[common_inds])
 }
 
+#' @importFrom scater pData<-
 fsc3_assign_signatures <- function(object_to_assign, object_ref, threshold = 0.7) {
     # reference object
-    buckets_ref <- unique(pData(object_ref)[, c("fsc3_buckets", "fsc3_buckets_signatures")])
+    buckets_ref <- unique(object_ref@phenoData@data[, c("fsc3_buckets", "fsc3_buckets_signatures")])
     # convert factors to strings
     if(is.factor(buckets_ref$fsc3_buckets)) {
         buckets_ref$fsc3_buckets <- levels(buckets_ref$fsc3_buckets)[buckets_ref$fsc3_buckets]
     }
     # object to assign
-    sigs_to_assign <- pData(object_to_assign)$fsc3_signatures
+    sigs_to_assign <- object_to_assign@phenoData@data$fsc3_signatures
     
     buckets_assigned <- NULL
     for(sig in sigs_to_assign) {
@@ -228,4 +135,6 @@ fsc3_plot_sig_expression <- function(object, fColumn = NULL, n_cells = 10, hc = 
         phm <- pheatmap::pheatmap(to_plot, cluster_cols = F, cluster_rows = hc, gaps_col = gaps)
     }
 }
+
+
 

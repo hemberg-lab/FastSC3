@@ -257,7 +257,6 @@ setMethod("fsc3_norm_kernel", signature(object = "SCESet"), function(object) {
 #' 
 #' @return an object of 'SCESet' class
 #' 
-#' @importFrom M3Drop M3DropDifferentialExpression
 #' @importFrom scater fData<-
 #' @importFrom SC3 get_processed_dataset
 #' 
@@ -389,7 +388,7 @@ setMethod("fsc3_set_features", signature(object = "SCESet"), function(object, fe
 #' @param exprs_values
 #' 
 #' @importFrom SC3 get_processed_dataset
-#' @importFrom scater pData pData<-
+#' @importFrom scater pData<-
 #' 
 #' @return an object of 'SCESet' class
 #' 
@@ -404,7 +403,7 @@ fsc3_get_signatures.SCESet <- function(object, exprs_values = "exprs") {
     data <- data[object@featureData@data$fsc3_features, ]
     data <- data[order(rownames(data)), ]
 
-    p_data <- pData(object)
+    p_data <- object@phenoData@data
     p_data$fsc3_signatures <- signature_mapper(data)
     pData(object) <- new("AnnotatedDataFrame", data = p_data)
     
@@ -460,7 +459,7 @@ setMethod("fsc3_get_signatures_fjlt", signature(object = "SCESet"), function(obj
 #' @param common_bits number of common bits which is enough to put two signatures
 #' in the same bucket
 #' 
-#' @importFrom scater pData pData<-
+#' @importFrom scater pData<-
 #' @importFrom methods new
 #' @importFrom mclust adjustedRandIndex
 #' 
@@ -468,7 +467,7 @@ setMethod("fsc3_get_signatures_fjlt", signature(object = "SCESet"), function(obj
 #' 
 #' @export
 fsc3_get_buckets.SCESet <- function(object, common_bits = NULL, runs = 50) {
-    sigs <- pData(object)$fsc3_signatures
+    sigs <- object@phenoData@data$fsc3_signatures
     if (is.null(sigs)) {
         warning(paste0("Please run fsc3_get_signatures() first!"))
         return(object)
@@ -503,7 +502,7 @@ fsc3_get_buckets.SCESet <- function(object, common_bits = NULL, runs = 50) {
     res <- buckets[ , sample(which(S == max(S, na.rm = TRUE)), 1)]
 
     message(paste0("Number of buckets is ", length(unique(res)), ". On average each bucket contains ", round(length(sigs) / length(unique(res))), " cells."))
-    p_data <- pData(object)
+    p_data <- object@phenoData@data
     p_data$fsc3_buckets <- res
     pData(object) <- new("AnnotatedDataFrame", data = p_data)
     return(object)
@@ -525,14 +524,14 @@ setMethod("fsc3_get_buckets", signature(object = "SCESet"), function(object, com
 #' 
 #' @param object an object of 'SCESet' class
 #' 
-#' @importFrom scater pData pData<-
+#' @importFrom scater pData<-
 #' 
 #' @return an object of 'SCESet' class
 #' 
 #' @export
 fsc3_get_buckets_signatures.SCESet <- function(object, threshold = 0.7) {
-    sigs <- pData(object)$fsc3_signatures
-    buckets <- pData(object)$fsc3_buckets
+    sigs <- object@phenoData@data$fsc3_signatures
+    buckets <- object@phenoData@data$fsc3_buckets
     if (is.null(sigs)) {
         warning(paste0("Please run fsc3_get_signatures() and fsc3_get_buckets() first!"))
         return(object)
@@ -551,7 +550,7 @@ fsc3_get_buckets_signatures.SCESet <- function(object, threshold = 0.7) {
         strengths <- c(strengths, strength)
     }
 
-    p_data <- pData(object)
+    p_data <- object@phenoData@data
     p_data$fsc3_buckets_signatures <- bsigs[match(buckets, unique(buckets))]
     p_data$fsc3_buckets_strength <- strengths[match(buckets, unique(buckets))]
     pData(object) <- new("AnnotatedDataFrame", data = p_data)

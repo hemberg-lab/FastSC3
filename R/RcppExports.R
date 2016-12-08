@@ -116,3 +116,7 @@ ssNystrom <- function(K, c) {
     .Call('FastSC3_ssNystrom', PACKAGE = 'FastSC3', K, c)
 }
 
+t_cpp <- function(X) {
+    .Call('FastSC3_t_cpp', PACKAGE = 'FastSC3', X)
+}
+

@@ -389,6 +389,62 @@ shekh <- featureNames(shekhar)[fData(shekhar)$fsc3_features]
 mac <- featureNames(macosko)[fData(macosko)$fsc3_features]
 upset(fromList(list(Shekhar = shekh, Macosko = mac)), order.by = "freq", nsets = 2)
 
+# SVM and Random Forest
+common_features <- get_common_fsc3_features(list(shekhar))
+macosko <- fsc3_set_features(macosko, common_features)
+# update common_features
+common_features <- featureNames(macosko)[fData(macosko)$fsc3_features]
+shekhar <- fsc3_set_features(shekhar, common_features)
+
+train <- exprs(shekhar)[fData(shekhar)$fsc3_features, ]
+colnames(train) <- pData(shekhar)$cell_type
+train <- train[order(rownames(train)), ]
+
+study <- exprs(macosko)[fData(macosko)$fsc3_features, ]
+colnames(study) <- pData(macosko)$cell_type
+study <- study[order(rownames(study)), ]
+
+res <- SC3:::support_vector_machines(train, study, "linear")
+labs_orig <- names(res)
+labs_new <- as.character(res)
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+
+res <- random_forest(train, study)
+labs_orig <- colnames(study)
+labs_new <- as.character(res)
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+
+
+
+common_features <- get_common_fsc3_features(list(macosko))
+shekhar <- fsc3_set_features(shekhar, common_features)
+# update common_features
+common_features <- featureNames(shekhar)[fData(shekhar)$fsc3_features]
+macosko <- fsc3_set_features(macosko, common_features)
+
+train <- exprs(macosko)[fData(macosko)$fsc3_features, ]
+colnames(train) <- pData(macosko)$cell_type
+train <- train[order(rownames(train)), ]
+
+study <- exprs(shekhar)[fData(shekhar)$fsc3_features, ]
+colnames(study) <- pData(shekhar)$cell_type
+study <- study[order(rownames(study)), ]
+
+res <- SC3:::support_vector_machines(train, study, "linear")
+labs_orig <- names(res)
+labs_new <- as.character(res)
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+
+res <- random_forest(train, study)
+labs_orig <- colnames(study)
+labs_new <- as.character(res)
+plot_sankey(labs_orig, labs_new)
+irr::kappa2(cbind(labs_orig, labs_new))$value
+
+
 # Assignments based on Shekhar
 common_features <- get_common_fsc3_features(list(shekhar))
 macosko <- fsc3_set_features(macosko, common_features)

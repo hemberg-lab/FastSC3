@@ -12,7 +12,7 @@ Authors@R: c(person("Vladimir", "Kiselev",
              role=c("aut")))
 Description: A tool for fast unsupervised clustering and analysis of single cell RNA-Seq data.
 License: GPL-3
-Depends: SC3
+Depends: R (>= 3.3)
 Imports: 
     Rcpp (>= 0.12.6), 
     scater, 
