@@ -83,6 +83,7 @@ fsc3_get_buckets_med_exprs <- function(object) {
 
 #' @importFrom scater pData<-
 #' @importFrom proxy dist
+#' @export
 fsc3_map_by_similarity <- function(object_to_map, buckets_ref, similarity, scale, threshold) {
     dat <- exprs(object_to_map)[fData(object_to_map)$fsc3_features, ]
     if(scale) {
